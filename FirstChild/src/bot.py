@@ -42,24 +42,42 @@ class MyBot(BaseAgent):
         car_velocity = Vec3(my_car.physics.velocity)
         ball_location = Vec3(packet.game_ball.physics.location)
 
+        # Draw ball prediction always
+        ball_prediction = self.get_ball_prediction_struct()
+        predictions = [ Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + i).physics.location) for i in range(1, 6)]
+        #for i in range(1, 5):
+        #    ball_in_future = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + i).physics.location)
+        #    self.renderer.draw_line_3d(prev, ball_in_future, self.renderer.cyan())
+        #    prev = ball_in_future
+        self.renderer.draw_polyline_3d([ball_location] + predictions, self.renderer.cyan())
+
+        flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
+        self.renderer.draw_line_3d(ball_location, flip_point, self.renderer.green())
+
+        target_location = flip_point
+
+        if car_location.dist(flip_point) < 1000:
+            return self.begin_front_flip(packet)
+
+        """
         if car_location.dist(ball_location) > 1500:
             # We're far away from the ball, let's try to lead it a little bit
             ball_prediction = self.get_ball_prediction_struct()  # This can predict bounces, etc
             ball_in_future = find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 2)
             target_location = Vec3(ball_in_future.physics.location)
-            self.renderer.draw_line_3d(ball_location, target_location, self.renderer.cyan())
         else:
             target_location = ball_location
+        """
 
         # Draw some things to help understand what the bot is thinking
         self.renderer.draw_line_3d(car_location, target_location, self.renderer.white())
         self.renderer.draw_string_3d(car_location, 1, 1, f'Speed: {car_velocity.length():.1f}', self.renderer.white())
         self.renderer.draw_rect_3d(target_location, 8, 8, True, self.renderer.cyan(), centered=True)
-
+        """
         if 750 < car_velocity.length() < 800:
             # We'll do a front flip if the car is moving at a certain speed.
             return self.begin_front_flip(packet)
-
+        """
         controls = SimpleControllerState()
         controls.steer = steer_toward_target(my_car, target_location)
         controls.throttle = 1.0
