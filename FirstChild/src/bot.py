@@ -4,6 +4,7 @@ import pymongo
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
 from rlbot.utils.structures.game_data_struct import GameTickPacket
+from rlbot.utils.logging_utils import log
 
 from util.ball_prediction_analysis import find_slice_at_time
 from util.boost_pad_tracker import BoostPadTracker
@@ -18,6 +19,7 @@ from drawing_agent import DrawingAgent
 class MyBot(DrawingAgent):
 
     current_flip_physics: dict = None
+    min_dist: float = 30000
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
@@ -67,12 +69,18 @@ class MyBot(DrawingAgent):
         # Keep our boost pad info updated with which pads are currently active
         self.boost_pad_tracker.update_boost_status(packet)
 
+        if (car_location.dist(ball_location) < 155):
+            self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_CloseOne)
+            self.current_flip_physics["contact"] = True
+
         # This is good to keep at the beginning of get_output. It will allow you to continue
         # any sequences that you may have started during a previous call to get_output.
         if self.active_sequence and not self.active_sequence.done:
             controls = self.active_sequence.tick(packet)
             if controls is not None:
                 return controls
+        else:
+            self.write_flip_physics(self.current_flip_physics)
 
 
         flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
@@ -80,11 +88,17 @@ class MyBot(DrawingAgent):
 
         target_location = flip_point
 
+        #log(car_location.dist(ball_location))
+        
+
         if car_location.dist(flip_point) < 1000:
             # record physics info at beginning of flip
-            with open("flips.csv", "w") as outfile:
-                writer = csv.writer(outfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                writer.writerow([car_location, car_velocity, ball_location, ball_velocity])
+            self.current_flip_physics = {}
+            self.current_flip_physics["car_velo"] = car_velocity
+            self.current_flip_physics["car_loc"] = car_location
+            self.current_flip_physics["ball_velo"] = ball_velocity
+            self.current_flip_physics["ball_loc"] = ball_location
+            self.current_flip_physics["contact"] = False
             return self.begin_front_flip(packet)
 
         """
