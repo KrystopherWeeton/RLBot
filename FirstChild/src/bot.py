@@ -60,6 +60,9 @@ class MyBot(DrawingAgent):
         ball_location = Vec3(packet.game_ball.physics.location)
         ball_velocity = Vec3(packet.game_ball.physics.velocity)
 
+        # Write to the car the distance between the car and the ball
+        self.write_string_on_car(car_location, f"{car_location.dist(ball_location):0.2f}")
+
         # Draw ball prediction always
         ball_prediction = self.get_ball_prediction_struct()
         predictions = [ Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + i).physics.location) for i in range(1, 6)]
