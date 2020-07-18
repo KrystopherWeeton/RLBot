@@ -68,8 +68,9 @@ class MyBot(DrawingAgent):
         # Keep our boost pad info updated with which pads are currently active
         self.boost_pad_tracker.update_boost_status(packet)
 
-        if (car_location.dist(ball_location) > 151) and (car_location.dist(ball_location) < 250):
+        if (car_location.dist(ball_location) < 155):
             self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_CloseOne)
+            self.current_flip_physics["contact"] = True
 
         # This is good to keep at the beginning of get_output. It will allow you to continue
         # any sequences that you may have started during a previous call to get_output.
@@ -77,6 +78,8 @@ class MyBot(DrawingAgent):
             controls = self.active_sequence.tick(packet)
             if controls is not None:
                 return controls
+        else:
+            self.write_flip_physics(self.current_flip_physics)
 
 
         flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
@@ -89,11 +92,12 @@ class MyBot(DrawingAgent):
 
         if car_location.dist(flip_point) < 1000:
             # record physics info at beginning of flip
-            current_flip_physics = {}
-            current_flip_physics["car_velo"] = car_velocity
-            current_flip_physics["car_loc"] = car_location
-            current_flip_physics["ball_velo"] = ball_velocity
-            current_flip_physics["ball_loc"] = ball_location
+            self.current_flip_physics = {}
+            self.current_flip_physics["car_velo"] = car_velocity
+            self.current_flip_physics["car_loc"] = car_location
+            self.current_flip_physics["ball_velo"] = ball_velocity
+            self.current_flip_physics["ball_loc"] = ball_location
+            self.current_flip_physics["contact"] = False
             return self.begin_front_flip(packet)
 
         """
