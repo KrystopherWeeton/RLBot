@@ -25,7 +25,8 @@ class MyBot(DrawingAgent):
         super().__init__(name, team, index)
         self.active_sequence: Sequence = None
         self.boost_pad_tracker = BoostPadTracker()
-    
+        self.init_db()
+        
     def init_db(self):
         self.client = pymongo.MongoClient("mongodb+srv://first_child:steven111!@clusterbuster.kjog8.mongodb.net/RocketBot?retryWrites=true&w=majority")
         self.db = self.client.get_database("RocketBot")
