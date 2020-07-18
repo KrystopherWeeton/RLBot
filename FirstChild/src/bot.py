@@ -44,16 +44,6 @@ class MyBot(DrawingAgent):
         see the motion of the ball, etc. and return controls to drive your car.
         """
 
-        # Keep our boost pad info updated with which pads are currently active
-        self.boost_pad_tracker.update_boost_status(packet)
-
-        # This is good to keep at the beginning of get_output. It will allow you to continue
-        # any sequences that you may have started during a previous call to get_output.
-        if self.active_sequence and not self.active_sequence.done:
-            controls = self.active_sequence.tick(packet)
-            if controls is not None:
-                return controls
-
         # Gather some information about our car and the ball
         my_car = packet.game_cars[self.index]
         car_location = Vec3(my_car.physics.location)
@@ -63,6 +53,16 @@ class MyBot(DrawingAgent):
 
         # Write to the car the distance between the car and the ball
         self.write_string_on_car(car_location, f"{car_location.dist(ball_location):0.2f}")
+
+        # Keep our boost pad info updated with which pads are currently active
+        self.boost_pad_tracker.update_boost_status(packet)
+
+        # This is good to keep at the beginning of get_output. It will allow you to continue
+        # any sequences that you may have started during a previous call to get_output.
+        if self.active_sequence and not self.active_sequence.done:
+            controls = self.active_sequence.tick(packet)
+            if controls is not None:
+                return controls
 
         # Draw ball prediction always
         ball_prediction = self.get_ball_prediction_struct()
