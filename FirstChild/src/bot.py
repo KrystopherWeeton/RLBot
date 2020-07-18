@@ -11,10 +11,11 @@ from util.drive import steer_toward_target
 from util.sequence import Sequence, ControlStep
 from util.vec import Vec3
 
+from drawing_agent import DrawingAgent
 
 
 
-class MyBot(BaseAgent):
+class MyBot(DrawingAgent):
 
     current_flip_physics: dict = None
 
@@ -92,7 +93,6 @@ class MyBot(BaseAgent):
 
         # Draw some things to help understand what the bot is thinking
         self.renderer.draw_line_3d(car_location, target_location, self.renderer.white())
-        self.renderer.draw_string_3d(car_location, 1, 1, f'Speed: {car_velocity.length():.1f}', self.renderer.white())
         self.renderer.draw_rect_3d(target_location, 8, 8, True, self.renderer.cyan(), centered=True)
         """
         if 750 < car_velocity.length() < 800:
