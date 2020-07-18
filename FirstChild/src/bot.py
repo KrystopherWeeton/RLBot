@@ -40,13 +40,13 @@ class MyBot(DrawingAgent):
     def draw_state(self, my_car, car_location, car_velocity, ball_location, ball_velocity):
 
 
-        # Write to the car the distance between the car and the ball
-        self.write_string_on_car(car_location, f"{car_location.dist(ball_location):0.2f}")
-
         # Draw ball prediction always
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
         self.renderer.draw_polyline_3d(slices, self.renderer.white())
+
+        # Write to the car the distance between the car and the ball
+        self.write_string_on_car(car_location, f"{car_location.dist(ball_location):0.2f}")
     
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         """
@@ -60,6 +60,7 @@ class MyBot(DrawingAgent):
         ball_location = Vec3(packet.game_ball.physics.location)
         ball_velocity = Vec3(packet.game_ball.physics.velocity)
         ball_prediction = self.get_ball_prediction_struct()
+        slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
 
         self.draw_state(my_car, car_location, car_velocity, ball_location, ball_velocity)
 
