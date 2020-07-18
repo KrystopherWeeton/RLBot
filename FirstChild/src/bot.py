@@ -19,6 +19,7 @@ from drawing_agent import DrawingAgent
 class MyBot(DrawingAgent):
 
     current_flip_physics: dict = None
+    min_dist: float = 30000
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
@@ -52,10 +53,15 @@ class MyBot(DrawingAgent):
         ball_velocity = Vec3(packet.game_ball.physics.velocity)
 
         # Write to the car the distance between the car and the ball
-        self.write_string_on_car(car_location, f"{car_location.dist(ball_location):0.2f}")
+        if(ball_location.dist(car_location) < self.min_dist):
+            self.min_dist = ball_location.dist(car_location)
+        self.write_string_on_car(car_location, f"{self.min_dist:0.2f}")
 
         # Keep our boost pad info updated with which pads are currently active
         self.boost_pad_tracker.update_boost_status(packet)
+
+        if (car_location.dist(ball_location) > 151) and (car_location.dist(ball_location) < 250):
+            self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_CloseOne)
 
         # This is good to keep at the beginning of get_output. It will allow you to continue
         # any sequences that you may have started during a previous call to get_output.
@@ -79,8 +85,7 @@ class MyBot(DrawingAgent):
         target_location = flip_point
 
         #log(car_location.dist(ball_location))
-        if(car_location.dist(ball_location) < 600):
-            self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_Siiiick)
+        
 
         if car_location.dist(flip_point) < 1000:
             # record physics info at beginning of flip
