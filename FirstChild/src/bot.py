@@ -26,7 +26,7 @@ class MyBot(DrawingAgent):
         self.active_sequence: Sequence = None
         self.boost_pad_tracker = BoostPadTracker()
         self.init_db()
-        
+
     def init_db(self):
         self.client = pymongo.MongoClient("mongodb+srv://first_child:steven111!@clusterbuster.kjog8.mongodb.net/RocketBot?retryWrites=true&w=majority")
         self.db = self.client.get_database("RocketBot")
@@ -41,8 +41,6 @@ class MyBot(DrawingAgent):
         self.boost_pad_tracker.initialize_boosts(self.get_field_info())
 
     def draw_state(self, my_car, car_location, car_velocity, ball_location, ball_velocity):
-
-
         # Draw ball prediction always
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
