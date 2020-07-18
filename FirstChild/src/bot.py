@@ -20,20 +20,6 @@ class MyBot(BaseAgent):
         # Set up information about the boost pads now that the game is active and the info is available
         self.boost_pad_tracker.initialize_boosts(self.get_field_info())
     
-    flip_time: float = 1
-    flip_distance: float = 100
-
-    def will_hit_with_flip(self, point, time) -> bool:
-        # Get car location
-        # Determine flip vector for direction
-        
-
-    def should_flip(self) -> bool:
-        """
-        Determines whether or not to flip forwards at this point in time by
-        predicting whether or not the ball will be hit.
-        """
-
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         """
         This function will be called by the framework many times per second. This is where you can
