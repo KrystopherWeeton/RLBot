@@ -4,6 +4,7 @@ import pymongo
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
 from rlbot.utils.structures.game_data_struct import GameTickPacket
+from rlbot.utils.logging_utils import log
 
 from util.ball_prediction_analysis import find_slice_at_time
 from util.boost_pad_tracker import BoostPadTracker
@@ -73,9 +74,17 @@ class MyBot(BaseAgent):
 
         target_location = flip_point
 
+        #log(car_location.dist(ball_location))
+        if(car_location.dist(ball_location) < 600):
+            self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_Siiiick)
+
         if car_location.dist(flip_point) < 1000:
             # record physics info at beginning of flip
-            self.write_flip_physics()
+            current_flip_physics = {}
+            current_flip_physics["car_velo"] = car_velocity
+            current_flip_physics["car_loc"] = car_location
+            current_flip_physics["ball_velo"] = ball_velocity
+            current_flip_physics["ball_loc"] = ball_location
             return self.begin_front_flip(packet)
 
         """
