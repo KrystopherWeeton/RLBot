@@ -63,14 +63,7 @@ class MyBot(DrawingAgent):
         ball_velocity = Vec3(packet.game_ball.physics.velocity)
         ball_prediction = self.get_ball_prediction_struct()
 
-<<<<<<< HEAD
-        # Write to the car the distance between the car and the ball
-        if(ball_location.dist(car_location) < self.min_dist):
-            self.min_dist = ball_location.dist(car_location)
-        self.write_string_on_car(car_location, f"{self.min_dist:0.2f}")
-=======
         self.draw_state(my_car, car_location, car_velocity, ball_location, ball_velocity)
->>>>>>> 996f35daed73fb6bdc5d0166ba336059daaa0699
 
         # Keep our boost pad info updated with which pads are currently active
         self.boost_pad_tracker.update_boost_status(packet)
