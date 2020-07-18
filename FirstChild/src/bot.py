@@ -16,17 +16,20 @@ from util.vec import Vec3
 
 class MyBot(BaseAgent):
 
+    current_flip_physics: dict = None
+
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
         self.active_sequence: Sequence = None
         self.boost_pad_tracker = BoostPadTracker()
+    
+    def init_db(self):
         self.client = pymongo.MongoClient("mongodb+srv://first_child:steven111!@clusterbuster.kjog8.mongodb.net/RocketBot?retryWrites=true&w=majority")
         self.db = self.client.get_database("RocketBot")
         self.flip_physics = self.db.get_collection("flip_physics")
-        self.write_flip_physics()
 
-    def write_flip_physics(self):
-        self.flip_physics.insert_one({"hello world":True})
+    def write_flip_physics(self, flip_physics):
+        self.flip_physics.insert_one(flip_physics)
 
 
     def initialize_agent(self):
