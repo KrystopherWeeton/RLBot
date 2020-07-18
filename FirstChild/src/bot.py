@@ -1,3 +1,6 @@
+import csv
+import pymongo
+
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
 from rlbot.utils.structures.game_data_struct import GameTickPacket
@@ -9,12 +12,22 @@ from util.sequence import Sequence, ControlStep
 from util.vec import Vec3
 
 
+
+
 class MyBot(BaseAgent):
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
         self.active_sequence: Sequence = None
         self.boost_pad_tracker = BoostPadTracker()
+        self.client = pymongo.MongoClient("mongodb+srv://first_child:steven111!@clusterbuster.kjog8.mongodb.net/RocketBot?retryWrites=true&w=majority")
+        self.db = self.client.get_database("RocketBot")
+        self.flip_physics = self.db.get_collection("flip_physics")
+        self.write_flip_physics()
+
+    def write_flip_physics(self):
+        self.flip_physics.insert_one({"hello world":True})
+
 
     def initialize_agent(self):
         # Set up information about the boost pads now that the game is active and the info is available
@@ -41,6 +54,7 @@ class MyBot(BaseAgent):
         car_location = Vec3(my_car.physics.location)
         car_velocity = Vec3(my_car.physics.velocity)
         ball_location = Vec3(packet.game_ball.physics.location)
+        ball_velocity = Vec3(packet.game_ball.physics.velocity)
 
         # Draw ball prediction always
         ball_prediction = self.get_ball_prediction_struct()
@@ -57,6 +71,10 @@ class MyBot(BaseAgent):
         target_location = flip_point
 
         if car_location.dist(flip_point) < 1000:
+            # record physics info at beginning of flip
+            with open("flips.csv", "w") as outfile:
+                writer = csv.writer(outfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                writer.writerow([car_location, car_velocity, ball_location, ball_velocity])
             return self.begin_front_flip(packet)
 
         """
