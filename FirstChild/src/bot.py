@@ -38,24 +38,39 @@ class MyBot(DrawingAgent):
     def initialize_agent(self):
         # Set up information about the boost pads now that the game is active and the info is available
         self.boost_pad_tracker.initialize_boosts(self.get_field_info())
+
+    def draw_state(self, my_car, car_location, car_velocity, ball_location, ball_velocity):
+
+
+        # Write to the car the distance between the car and the ball
+        self.write_string_on_car(car_location, f"{car_location.dist(ball_location):0.2f}")
+
+        # Draw ball prediction always
+        ball_prediction = self.get_ball_prediction_struct()
+        slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
+        self.renderer.draw_polyline_3d(slices, self.renderer.white())
     
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         """
         This function will be called by the framework many times per second. This is where you can
         see the motion of the ball, etc. and return controls to drive your car.
         """
-
         # Gather some information about our car and the ball
         my_car = packet.game_cars[self.index]
         car_location = Vec3(my_car.physics.location)
         car_velocity = Vec3(my_car.physics.velocity)
         ball_location = Vec3(packet.game_ball.physics.location)
         ball_velocity = Vec3(packet.game_ball.physics.velocity)
+        ball_prediction = self.get_ball_prediction_struct()
 
+<<<<<<< HEAD
         # Write to the car the distance between the car and the ball
         if(ball_location.dist(car_location) < self.min_dist):
             self.min_dist = ball_location.dist(car_location)
         self.write_string_on_car(car_location, f"{self.min_dist:0.2f}")
+=======
+        self.draw_state(my_car, car_location, car_velocity, ball_location, ball_velocity)
+>>>>>>> 996f35daed73fb6bdc5d0166ba336059daaa0699
 
         # Keep our boost pad info updated with which pads are currently active
         self.boost_pad_tracker.update_boost_status(packet)
@@ -70,14 +85,6 @@ class MyBot(DrawingAgent):
             if controls is not None:
                 return controls
 
-        # Draw ball prediction always
-        ball_prediction = self.get_ball_prediction_struct()
-        predictions = [ Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + i).physics.location) for i in range(1, 6)]
-        #for i in range(1, 5):
-        #    ball_in_future = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + i).physics.location)
-        #    self.renderer.draw_line_3d(prev, ball_in_future, self.renderer.cyan())
-        #    prev = ball_in_future
-        self.renderer.draw_polyline_3d([ball_location] + predictions, self.renderer.cyan())
 
         flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
         self.renderer.draw_line_3d(ball_location, flip_point, self.renderer.green())
