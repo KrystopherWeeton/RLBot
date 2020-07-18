@@ -72,9 +72,7 @@ class MyBot(BaseAgent):
 
         if car_location.dist(flip_point) < 1000:
             # record physics info at beginning of flip
-            with open("flips.csv", "w") as outfile:
-                writer = csv.writer(outfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                writer.writerow([car_location, car_velocity, ball_location, ball_velocity])
+            self.write_flip_physics()
             return self.begin_front_flip(packet)
 
         """
