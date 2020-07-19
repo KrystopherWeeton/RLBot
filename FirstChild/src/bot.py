@@ -26,7 +26,8 @@ class MyBot(DrawingAgent):
         super().__init__(name, team, index)
         self.active_sequence: Sequence = None
         self.boost_pad_tracker = BoostPadTracker()
-    
+        self.init_db()
+
     def init_db(self):
         self.client = pymongo.MongoClient("mongodb+srv://first_child:steven111!@clusterbuster.kjog8.mongodb.net/RocketBot?retryWrites=true&w=majority")
         self.db = self.client.get_database("RocketBot")
@@ -42,15 +43,13 @@ class MyBot(DrawingAgent):
         self.boost_pad_tracker.initialize_boosts(self.get_field_info())
 
     def draw_state(self, my_car, car_location, car_velocity, ball_location, ball_velocity):
-
-
-        # Write to the car the distance between the car and the ball
-        self.write_string_on_car(car_location, f"{car_location.dist(ball_location):0.2f}")
-
         # Draw ball prediction always
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
         self.renderer.draw_polyline_3d(slices, self.renderer.white())
+
+        # Write to the car the distance between the car and the ball
+        self.write_string_on_car(car_location, f"{car_location.dist(ball_location):0.2f}")
     
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         """
@@ -64,6 +63,7 @@ class MyBot(DrawingAgent):
         ball_location = Vec3(packet.game_ball.physics.location)
         ball_velocity = Vec3(packet.game_ball.physics.velocity)
         ball_prediction = self.get_ball_prediction_struct()
+        slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
 
         self.draw_state(my_car, car_location, car_velocity, ball_location, ball_velocity)
 
