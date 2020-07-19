@@ -14,7 +14,7 @@ from util.vec import Vec3
 
 from drawing_agent import DrawingAgent
 
-
+WRITE_FLIP_PHYSICS_TO_DB = False
 
 class MyBot(DrawingAgent):
 
@@ -34,7 +34,7 @@ class MyBot(DrawingAgent):
         self.flip_physics = self.db.get_collection("flip_physics")
 
     def write_flip_physics(self, flip_physics):
-        log("Writing to databse")
+        log("Writing to databse: contact=" + str(flip_physics["contact"]))
         self.flip_physics.insert_one(flip_physics)
 
 
@@ -81,7 +81,7 @@ class MyBot(DrawingAgent):
             if controls is not None:
                 self.prev_seq_done = False
                 return controls
-        elif self.prev_seq_done == False:
+        elif self.prev_seq_done == False and WRITE_FLIP_PHYSICS_TO_DB == True:
             self.prev_seq_done = True
             self.write_flip_physics(self.current_flip_physics)
 
@@ -93,15 +93,34 @@ class MyBot(DrawingAgent):
 
         #log(car_location.dist(ball_location))
         
-
+        # should we flip right now?
         if car_location.dist(flip_point) < 1000:
-            # record physics info at beginning of flip
-            self.current_flip_physics = {}
-            self.current_flip_physics["car_velo"] = car_velocity
-            self.current_flip_physics["car_loc"] = car_location
-            self.current_flip_physics["ball_velo"] = ball_velocity
-            self.current_flip_physics["ball_loc"] = ball_location
-            self.current_flip_physics["contact"] = False
+            if WRITE_FLIP_PHYSICS_TO_DB == True:
+                # record physics info at beginning of flip
+                self.current_flip_physics = {}
+
+                # TODO: add slices here
+
+                self.current_flip_physics["car_velo_x"] = car_velocity[0]
+                self.current_flip_physics["car_velo_y"] = car_velocity[1]
+                self.current_flip_physics["car_velo_z"] = car_velocity[2]
+                self.current_flip_physics["car_velo_mag"] = car_velocity.length()
+
+                self.current_flip_physics["car_loc_x"] = car_location[0]
+                self.current_flip_physics["car_loc_y"] = car_location[1]
+                self.current_flip_physics["car_loc_z"] = car_location[2]
+
+                self.current_flip_physics["ball_velo_x"] = ball_velocity[0]
+                self.current_flip_physics["ball_velo_y"] = ball_velocity[1]
+                self.current_flip_physics["ball_velo_z"] = ball_velocity[2]
+                self.current_flip_physics["ball_velo_mag"] = ball_velocity.length()
+
+                self.current_flip_physics["ball_loc_x"] = ball_location[0]
+                self.current_flip_physics["ball_loc_y"] = ball_location[1]
+                self.current_flip_physics["ball_loc_z"] = ball_location[2]
+
+                self.current_flip_physics["contact"] = False
+
             return self.begin_front_flip(packet)
 
         """
