@@ -20,6 +20,7 @@ class MyBot(DrawingAgent):
 
     current_flip_physics: dict = None
     min_dist: float = 30000
+    prev_seq_done: bool = True
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
@@ -32,6 +33,7 @@ class MyBot(DrawingAgent):
         self.flip_physics = self.db.get_collection("flip_physics")
 
     def write_flip_physics(self, flip_physics):
+        log("Writing to databse")
         self.flip_physics.insert_one(flip_physics)
 
 
@@ -77,8 +79,10 @@ class MyBot(DrawingAgent):
         if self.active_sequence and not self.active_sequence.done:
             controls = self.active_sequence.tick(packet)
             if controls is not None:
+                self.prev_seq_done = False
                 return controls
-        else:
+        elif self.prev_seq_done == False:
+            self.prev_seq_done = True
             self.write_flip_physics(self.current_flip_physics)
 
 
