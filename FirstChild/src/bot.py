@@ -11,10 +11,11 @@ from util.boost_pad_tracker import BoostPadTracker
 from util.drive import steer_toward_target
 from util.sequence import Sequence, ControlStep
 from util.vec import Vec3
+from util.orientation import Orientation, relative_location
 
 from drawing_agent import DrawingAgent
 
-WRITE_FLIP_PHYSICS_TO_DB = False
+WRITE_FLIP_PHYSICS_TO_DB = True
 
 class MyBot(DrawingAgent):
 
@@ -42,15 +43,19 @@ class MyBot(DrawingAgent):
         # Set up information about the boost pads now that the game is active and the info is available
         self.boost_pad_tracker.initialize_boosts(self.get_field_info())
 
-    def draw_state(self, my_car, car_location, car_velocity, ball_location, ball_velocity):
+    def draw_state(self, my_car, car_location, car_velocity, ball_location, ball_velocity, car_to_ball_angle):
         # Draw ball prediction always
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
         self.renderer.draw_polyline_3d(slices, self.renderer.white())
 
         # Write to the car the distance between the car and the ball
-        self.write_string_on_car(car_location, f"{car_location.dist(ball_location):0.2f}")
+        self.write_string_on_car(car_location, f"{car_to_ball_angle:0.2f}")
     
+    def draw_car_to_ball(self, car_location, ball_location):
+        # draw vector from car to ball
+        self.renderer.draw_line_3d(car_location, ball_location, self.renderer.pink())
+
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         """
         This function will be called by the framework many times per second. This is where you can
@@ -65,12 +70,17 @@ class MyBot(DrawingAgent):
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
 
-        self.draw_state(my_car, car_location, car_velocity, ball_location, ball_velocity)
+        my_car_ori = Orientation(my_car.physics.rotation)
+        car_to_ball = ball_location - car_location
+        car_to_ball_angle = my_car_ori.forward.ang_to(car_to_ball)
+
+        self.draw_state(my_car, car_location, car_velocity, ball_location, ball_velocity, car_to_ball_angle)
+        self.draw_car_to_ball(car_location, ball_location)
 
         # Keep our boost pad info updated with which pads are currently active
         self.boost_pad_tracker.update_boost_status(packet)
 
-        if (car_location.dist(ball_location) < 155):
+        if (car_location.dist(ball_location) < 165):
             self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_CloseOne)
             self.current_flip_physics["contact"] = True
 
@@ -100,6 +110,11 @@ class MyBot(DrawingAgent):
                 self.current_flip_physics = {}
 
                 # TODO: add slices here
+
+                
+                self.current_flip_physics["car_ball_angle"] = car_to_ball_angle
+                self.current_flip_physics["car_ball_dist"] = car_location.dist(ball_location)
+                
 
                 self.current_flip_physics["car_velo_x"] = car_velocity[0]
                 self.current_flip_physics["car_velo_y"] = car_velocity[1]
