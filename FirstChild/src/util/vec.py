@@ -107,3 +107,11 @@ class Vec3:
         """Returns the angle to the ideal vector. Angle will be between 0 and pi."""
         cos_ang = self.dot(ideal) / (self.length() * ideal.length())
         return math.acos(cos_ang)
+
+    def polar_to_cartesian(self, hor_degrees: float, vert_degrees: float, r: int):
+        hor_angle = hor_degrees * math.pi/180
+        vert_angle = vert_degrees * math.pi/180
+        x = r * math.sin(hor_angle) * math.cos()
+        return 3
+
+
