@@ -18,9 +18,10 @@ from decision_agent import DecisionAgent
 from rlbot.utils.logging_utils import log, log_warn
 from rlbot.utils.structures.game_data_struct import Physics
 
-
 class Agent(DecisionAgent):
 
+    # The minimum y value that the ball should have for marking a goal
+    GOAL_THRESHOLD = 5180
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
@@ -53,14 +54,32 @@ class Agent(DecisionAgent):
         # Write to the car the appropriate string
         self.write_string(my_physics.location, self.display_on_car(my_physics, ball_physics, packet))
 
+        # Determine whether or not the ball is going to go into the goal
+        goal_overlap: Vec3 = self.get_goal_overlap()
+        if goal_overlap is not None:        # The ball is going in
+            self.draw_circle(goal_overlap, 100)
+        else:
+            self.renderer.draw_string_2d(1000, 1000, 1, 1, str(Vec3(ball_physics.location)), self.renderer.white())
 
-    
+    def get_goal_overlap(self) -> Vec3:
+        ball_prediction = self.get_ball_prediction_struct()
+        slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
+        for (index, loc) in enumerate(slices):
+            if abs(loc.y) < self.GOAL_THRESHOLD:
+                continue
+
+            if index < len(slices) - 1 and abs(slices[index + 1].y) < self.GOAL_THRESHOLD:
+                continue
+
+            return loc
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         # Parse the packet to gather relevant information
         my_car, my_physics, ball_physics = self.parse_packet(packet)
+        # Draw the ball if appropriate
         if self.draw_ball_physics:
             self.draw_legend()
             self.draw_physics_info(ball_physics)
+        # Draw the state / debug information
         self.draw_state(my_physics, ball_physics, packet)
         return self.determine_output(my_car, my_physics, ball_physics, packet)

@@ -25,7 +25,7 @@ class DecisionAgent(DrawingAgent):
 
     
     # Whether or not to draw the ball physics and legend on the screen
-    draw_ball_physics: bool = True
+    draw_ball_physics: bool = False
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
