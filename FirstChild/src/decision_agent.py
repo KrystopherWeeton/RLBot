@@ -23,6 +23,10 @@ class DecisionAgent(DrawingAgent):
     min_dist: float = 30000
     prev_seq_done: bool = True
 
+    
+    # Whether or not to draw the ball physics and legend on the screen
+    draw_ball_physics: bool = True
+
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
         self.active_sequence: Sequence = None
@@ -71,7 +75,8 @@ class DecisionAgent(DrawingAgent):
 
             
         flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
-        self.draw_sphere(flip_point, 100, self.renderer.cyan())
+        # Takes up a lot of space, so don't draw it yet.
+        # self.draw_sphere(flip_point, 100, self.renderer.cyan())
 
         # This is good to keep at the beginning of get_output. It will allow you to continue
         # any sequences that you may have started during a previous call to get_output.
@@ -132,7 +137,7 @@ class DecisionAgent(DrawingAgent):
         """
 
         # Draw target to show where the bot is attempting to go
-        self.renderer.draw_line_3d(car_location, target_location, self.renderer.cyan())
+        self.draw_line_with_rect(car_location, target_location, 8, self.renderer.cyan())
 
         # Set the final controls based off of above decision making
         controls = SimpleControllerState()

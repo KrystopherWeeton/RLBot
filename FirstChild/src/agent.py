@@ -16,8 +16,11 @@ from drawing_agent import DrawingAgent
 
 from decision_agent import DecisionAgent
 from rlbot.utils.logging_utils import log, log_warn
+from rlbot.utils.structures.game_data_struct import Physics
+
 
 class Agent(DecisionAgent):
+
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
@@ -49,9 +52,15 @@ class Agent(DecisionAgent):
 
         # Write to the car the appropriate string
         self.write_string(my_physics.location, self.display_on_car(my_physics, ball_physics, packet))
+
+
     
+
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         # Parse the packet to gather relevant information
         my_car, my_physics, ball_physics = self.parse_packet(packet)
+        if self.draw_ball_physics:
+            self.draw_legend()
+            self.draw_physics_info(ball_physics)
         self.draw_state(my_physics, ball_physics, packet)
         return self.determine_output(my_car, my_physics, ball_physics, packet)

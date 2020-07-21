@@ -8,12 +8,24 @@ from math import sin
 
 from rlbot.utils.logging_utils import log
 
+from rlbot.utils.structures.game_data_struct import Physics
+
 class DrawingAgent(BaseAgent):
     
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
 
+    def draw_physics_info(self, physics: Physics):
+        location = Vec3(physics.location)
+        velocity = Vec3(physics.velocity) * 100
+        angular_velocity = Vec3(physics.velocity)
+        self.draw_line_with_rect(location, location + velocity, 8, self.renderer.green())
+        self.draw_line_with_rect(location, location + angular_velocity, 8, self.renderer.blue())
+
+    def draw_legend(self):
+        self.renderer.draw_string_2d(10, 800, 1, 1, "Angular Velocity", self.renderer.blue())
+        self.renderer.draw_string_2d(10, 830, 1, 1, "Velocity", self.renderer.green())
 
     def write_string(self, location, message, scale=1, color=None):
         """
