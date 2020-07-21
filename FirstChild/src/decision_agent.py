@@ -16,7 +16,7 @@ from drawing_agent import DrawingAgent
 
 
 
-class MyBot(DrawingAgent):
+class DecisionAgent(DrawingAgent):
 
     current_flip_physics: dict = None
     min_dist: float = 30000
@@ -25,31 +25,23 @@ class MyBot(DrawingAgent):
         super().__init__(name, team, index)
         self.active_sequence: Sequence = None
         self.boost_pad_tracker = BoostPadTracker()
-        self.init_db()
-
-    def init_db(self):
-        self.client = pymongo.MongoClient("mongodb+srv://first_child:steven111!@clusterbuster.kjog8.mongodb.net/RocketBot?retryWrites=true&w=majority")
-        self.db = self.client.get_database("RocketBot")
-        self.flip_physics = self.db.get_collection("flip_physics")
-
-    def write_flip_physics(self, flip_physics):
-        self.flip_physics.insert_one(flip_physics)
-
 
     def initialize_agent(self):
         # Set up information about the boost pads now that the game is active and the info is available
         self.boost_pad_tracker.initialize_boosts(self.get_field_info())
 
-    def draw_state(self, my_car, car_location, car_velocity, ball_location, ball_velocity):
-        # Draw ball prediction always
-        ball_prediction = self.get_ball_prediction_struct()
-        slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
-        self.renderer.draw_polyline_3d(slices, self.renderer.white())
+    def display_on_car(self, my_physics, ball_physics, packet):
+        """
+        A function that should return what should be printed on the car.
+        """
+        # Default behavior is to print distance between car and ball.
+        # my_physics.location is the location of my car. dist gets the distance
+        # from another location. The f in front of the string is python syntax to
+        # format the string so anything in the {} will be evaluated. The 0.2f rounds
+        # the output to 2 decimal points to help readability.
+        return f"{Vec3(my_physics.location).dist(Vec3(ball_physics.location)):0.2f}"
 
-        # Write to the car the distance between the car and the ball
-        self.write_string_on_car(car_location, f"{car_location.dist(ball_location):0.2f}")
-    
-    def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
+    def determine_output(self, my_car, my_physics, ball_physics, packet: GameTickPacket) -> SimpleControllerState:
         """
         This function will be called by the framework many times per second. This is where you can
         see the motion of the ball, etc. and return controls to drive your car.
@@ -62,8 +54,6 @@ class MyBot(DrawingAgent):
         ball_velocity = Vec3(packet.game_ball.physics.velocity)
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
-
-        self.draw_state(my_car, car_location, car_velocity, ball_location, ball_velocity)
 
         # Keep our boost pad info updated with which pads are currently active
         self.boost_pad_tracker.update_boost_status(packet)
@@ -78,8 +68,9 @@ class MyBot(DrawingAgent):
             controls = self.active_sequence.tick(packet)
             if controls is not None:
                 return controls
-        else:
-            self.write_flip_physics(self.current_flip_physics)
+        #else:
+            # Something is broken. Vec3 and None is being written.
+            #self.write_flip_physics(self.current_flip_physics)
 
 
         flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
