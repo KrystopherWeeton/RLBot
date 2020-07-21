@@ -48,7 +48,7 @@ class Agent(DecisionAgent):
         self.renderer.draw_polyline_3d(slices, self.renderer.white())
 
         # Write to the car the appropriate string
-        self.write_string_on_car(my_physics.location, self.display_on_car(my_physics, ball_physics, packet))
+        self.write_string(my_physics.location, self.display_on_car(my_physics, ball_physics, packet))
     
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         # Parse the packet to gather relevant information

@@ -9,22 +9,20 @@ from math import sin
 from rlbot.utils.logging_utils import log
 
 class DrawingAgent(BaseAgent):
+    
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
 
-    def write_string_on_car(self, location, message, scale=1, color=None):
+
+    def write_string(self, location, message, scale=1, color=None):
         """
         Writes a string at the provided location
         """
-        # Add in a default color at runtime to avoid self reference issues
         color = color or self.renderer.cyan()
-
-        # Get physics location for where to write messages
         car_location = Vec3(location)
-        
-        # Render information
         self.renderer.draw_string_3d(car_location, scale, scale, str(message), color)
+
 
     def draw_line_with_rect(self, start, end, size, color=None):
         """
@@ -33,6 +31,7 @@ class DrawingAgent(BaseAgent):
         color = color or self.renderer.cyan()
         self.renderer.draw_line_3d(start, end, color)
         self.renderer.draw_rect_3d(end, size, size, True, color, True)
+
 
     def draw_sphere(self, center: Vec3, radius, color=None, num_sides=12):
         # Draw vertical circles
