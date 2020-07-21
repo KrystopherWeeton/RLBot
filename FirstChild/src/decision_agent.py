@@ -62,6 +62,10 @@ class DecisionAgent(DrawingAgent):
             self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_CloseOne)
             self.current_flip_physics["contact"] = True
 
+            
+        flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
+        self.draw_sphere(flip_point, 100, self.renderer.cyan())
+
         # This is good to keep at the beginning of get_output. It will allow you to continue
         # any sequences that you may have started during a previous call to get_output.
         if self.active_sequence and not self.active_sequence.done:
@@ -72,8 +76,6 @@ class DecisionAgent(DrawingAgent):
             # Something is broken. Vec3 and None is being written.
             #self.write_flip_physics(self.current_flip_physics)
 
-
-        flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
 
         target_location = flip_point
 
@@ -98,7 +100,7 @@ class DecisionAgent(DrawingAgent):
         """
 
         # Draw target to show where the bot is attempting to go
-        self.draw_line_with_rect(car_location, target_location, 8, self.renderer.cyan())
+        self.renderer.draw_line_3d(car_location, target_location, self.renderer.cyan())
 
         # Set the final controls based off of above decision making
         controls = SimpleControllerState()

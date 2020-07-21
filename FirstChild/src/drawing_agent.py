@@ -4,6 +4,8 @@ from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from util.vec import Vec3, polar_to_cartesian
 
+from math import sin
+
 from rlbot.utils.logging_utils import log
 
 class DrawingAgent(BaseAgent):
@@ -32,17 +34,28 @@ class DrawingAgent(BaseAgent):
         self.renderer.draw_line_3d(start, end, color)
         self.renderer.draw_rect_3d(end, size, size, True, color, True)
 
+    def draw_sphere(self, center: Vec3, radius, color=None, num_sides=12):
+        # Draw vertical circles
+        color = color or self.renderer.red()
+        self.draw_circle(
+            center, radius, color, vertical=True, horizontal_rotation=0, num_sides = num_sides
+        )
+        self.draw_circle(
+            center, radius, color, vertical=True, horizontal_rotation=90, num_sides = num_sides
+        )
 
-    def draw_circle(self, center: Vec3, radius, color=None, vertical=True, num_sides=18) -> int:
+
+    def draw_circle(self, center: Vec3, radius, color=None, vertical=True, horizontal_rotation: float = 0, num_sides=18):
         """
         Draws a circle at the specified location horizontally.
         """
+        # Math shit which works
         color = color or self.renderer.white()
         angles = [ k * 360 / num_sides for k in range(num_sides) ]
         if (vertical):
-            points = [ center + polar_to_cartesian(0, angle, radius) for angle in angles ]
+            points = [ center + polar_to_cartesian(horizontal_rotation, angle, radius) for angle in angles ]
         else:
-            points = [ center + polar_to_cartesian(angle, 0, radius) for angle in angles ]
+            points = [ center + polar_to_cartesian(angle, 90 - sin(radius / center.z), radius) for angle in angles ]
         i = 0
         while i < len(points) - 1:
             self.renderer.draw_line_3d(points[i], points[i + 1], color)
