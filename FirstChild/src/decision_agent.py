@@ -74,12 +74,8 @@ class DecisionAgent(DrawingAgent):
 
 
         flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
-        self.renderer.draw_line_3d(ball_location, flip_point, self.renderer.green())
 
         target_location = flip_point
-
-        #log(car_location.dist(ball_location))
-        
 
         if car_location.dist(flip_point) < 1000:
             # record physics info at beginning of flip
@@ -101,19 +97,15 @@ class DecisionAgent(DrawingAgent):
             target_location = ball_location
         """
 
-        # Draw some things to help understand what the bot is thinking
-        self.renderer.draw_line_3d(car_location, target_location, self.renderer.white())
-        self.renderer.draw_rect_3d(target_location, 8, 8, True, self.renderer.cyan(), centered=True)
-        """
-        if 750 < car_velocity.length() < 800:
-            # We'll do a front flip if the car is moving at a certain speed.
-            return self.begin_front_flip(packet)
-        """
+        # Draw target to show where the bot is attempting to go
+        self.draw_line_with_rect(car_location, target_location, 8, self.renderer.cyan())
+
+        # Set the final controls based off of above decision making
         controls = SimpleControllerState()
         controls.steer = steer_toward_target(my_car, target_location)
         controls.throttle = 1.0
-        # You can set more controls if you want, like controls.boost.
 
+        # You can set more controls if you want, like controls.boost.
         return controls
 
     def begin_front_flip(self, packet):

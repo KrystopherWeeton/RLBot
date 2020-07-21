@@ -18,3 +18,9 @@ class DrawingAgent(BaseAgent):
         
         # Render information
         self.renderer.draw_string_3d(car_location, scale, scale, str(message), color)
+
+    def draw_line_with_rect(self, start, end, size, color=None):
+        color = color or self.renderer.cyan()
+
+        self.renderer.draw_line_3d(start, end, color)
+        self.renderer.draw_rect_3d(end, size, size, True, color, True)
