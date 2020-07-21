@@ -2,6 +2,7 @@ import math
 from typing import Union
 
 from rlbot.utils.structures.game_data_struct import Vector3
+from rlbot.utils.logging_utils import log
 
 
 class Vec3:
@@ -108,10 +109,14 @@ class Vec3:
         cos_ang = self.dot(ideal) / (self.length() * ideal.length())
         return math.acos(cos_ang)
 
-    def polar_to_cartesian(self, hor_degrees: float, vert_degrees: float, r: int):
-        hor_angle = hor_degrees * math.pi/180
-        vert_angle = vert_degrees * math.pi/180
-        x = r * math.sin(hor_angle) * math.cos()
-        return 3
+def polar_to_cartesian(hor_degrees: float, vert_degrees: float, r: int) -> Vec3:
+    hor_angle = hor_degrees * math.pi/180
+    vert_angle = vert_degrees * math.pi/180
+    x = r * math.sin(vert_angle) * math.cos(hor_angle)
+    y = r * math.sin(vert_angle) * math.sin(hor_angle)
+    z = r * math.cos(vert_angle)
+    return Vec3(
+        x, y, z
+    )
 
 

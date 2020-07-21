@@ -47,6 +47,9 @@ class Agent(DecisionAgent):
         slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
         self.renderer.draw_polyline_3d(slices, self.renderer.white())
 
+        # Draw circle at target location
+        self.draw_circle(Vec3(0, 0, 25), 30)
+
         # Write to the car the appropriate string
         self.write_string_on_car(my_physics.location, self.display_on_car(my_physics, ball_physics, packet))
     
