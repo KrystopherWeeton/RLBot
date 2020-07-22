@@ -20,8 +20,6 @@ from rlbot.utils.structures.game_data_struct import Physics
 
 class Agent(DecisionAgent):
 
-    # The minimum y value that the ball should have for marking a goal
-    GOAL_THRESHOLD = 5180
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)

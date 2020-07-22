@@ -20,6 +20,9 @@ from typing import Dict, Callable
 
 class DecisionAgent(DrawingAgent):
 
+    # The minimum y value that the ball should have for marking a goal
+    GOAL_THRESHOLD = 5180
+
     # flip_physics database stuff
     current_flip_physics: dict = None
     min_dist: float = 30000
@@ -45,23 +48,58 @@ class DecisionAgent(DrawingAgent):
             State.CLEAR:            self.clear,
             State.SHOOT:            self.shoot
         }
-    
+
+    def goal_center(self, team: int) -> Vec3:
+        x: float = 0
+        y: float = self.GOAL_THRESHOLD if team == 1 else -self.GOAL_THRESHOLD
+        z: float = 100
+        return Vec3(x, y, z)
+
+    def signed_dist_to_ball(self, car_location: Vec3, ball_location: Vec3, team) -> float:
+        """
+        Returns signed y distance from car to the ball.
+        The sign represents the direction. E.g. a positive sign indicates towards opponents goal.
+        """
+        team_goal_y = self.goal_center(team).y
+        car_dist = team_goal_y - car_location.y
+        ball_dist = team_goal_y - ball_location.y
+        return ball_dist - car_dist
+
+    def move_towards_point(self, my_car, point, boost: bool) -> SimpleControllerState:
+         # Set the final controls based off of above decision making
+        controls = SimpleControllerState()
+        controls.steer = steer_toward_target(my_car, point)
+        controls.throttle = 1.0
+        if boost:
+            controls.boost = True
+        return controls
     
     def next_state(self, my_car, my_physics, ball_physics, packet: GameTickPacket) -> State:
+        # Cast everything if necessary
+        car_location = Vec3(my_physics.location)
+        ball_location = Vec3(ball_physics.location)
+
+        # Check if we are on the wrong side of the ball
+        signed_dist = self.signed_dist_to_ball(car_location, ball_location, my_car.team)
+        if (signed_dist < 0):
+            return State.RECOVER
+
         return State.SHOOT  # For now all behavior is described in SHOOT, so
         # always return that as the state
 
 
     def kickoff(self, packet: GameTickPacket) -> SimpleControllerState:
-        log_warn("I am in an invalid state with no defined behavior.")
+        log_warn("I am in an invalid state with no defined behavior.", {})
 
         
     def recover(self, packet: GameTickPacket) -> SimpleControllerState:
-        log_warn("I am in an invalid state with no defined behavior.")
+        my_car = packet.game_cars[self.index]
+        target_location = self.goal_center(my_car.team)
+        return self.move_towards_point(my_car, target_location, True)
 
         
     def clear(self, packet: GameTickPacket) -> SimpleControllerState:
-        log_warn("I am in an invalid state with no defined behavior.")
+        log_warn("I am in an invalid state with no defined behavior.", {})
 
 
     def shoot(self, packet: GameTickPacket) -> SimpleControllerState:
@@ -79,6 +117,8 @@ class DecisionAgent(DrawingAgent):
         car_to_ball_angle = my_car_ori.forward.ang_to(car_to_ball)            
         flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
         target_location = flip_point
+
+        #self.draw_sphere(self.goal_center(my_car.team), 20, self.renderer.red())
 
         if car_location.dist(flip_point) < 1000:
             if self.WRITE_FLIP_PHYSICS_TO_DB == True:
