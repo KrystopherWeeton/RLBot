@@ -4,36 +4,14 @@ from typing import Union
 from rlbot.utils.structures.game_data_struct import Vector3
 from rlbot.utils.logging_utils import log
 
-
-class Vec3:
-    """
-    This class should provide you with all the basic vector operations that you need, but feel free to extend its
-    functionality when needed.
-    The vectors found in the GameTickPacket will be flatbuffer vectors. Cast them to Vec3 like this:
-    `car_location = Vec3(car.physics.location)`.
-
-    Remember that the in-game axis are left-handed.
-
-    When in doubt visit the wiki: https://github.com/RLBot/RLBot/wiki/Useful-Game-Values
-    """
-    # https://docs.python.org/3/reference/datamodel.html#slots
+class Vector:
     __slots__ = [
         'x',
         'y',
         'z'
     ]
 
-    def __init__(self, x: Union[float, 'Vec3', 'Vector3']=0, y: float=0, z: float=0):
-        """
-        Create a new Vec3. The x component can alternatively be another vector with an x, y, and z component, in which
-        case the created vector is a copy of the given vector and the y and z parameter is ignored. Examples:
-
-        a = Vec3(1, 2, 3)
-
-        b = Vec3(a)
-
-        """
-
+    def __init__(self, x: Union[float, 'Vector', 'Vector3']=0, y: float=0, z: float=0):
         if hasattr(x, 'x'):
             # We have been given a vector. Copy it
             self.x = float(x.x)
@@ -47,40 +25,40 @@ class Vec3:
     def __getitem__(self, item: int):
         return (self.x, self.y, self.z)[item]
 
-    def __add__(self, other: 'Vec3') -> 'Vec3':
-        return Vec3(self.x + other.x, self.y + other.y, self.z + other.z)
+    def __add__(self, other: 'Vector') -> 'Vector':
+        return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
 
-    def __sub__(self, other: 'Vec3') -> 'Vec3':
-        return Vec3(self.x - other.x, self.y - other.y, self.z - other.z)
+    def __sub__(self, other: 'Vector') -> 'Vector':
+        return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
 
     def __neg__(self):
-        return Vec3(-self.x, -self.y, -self.z)
+        return Vector(-self.x, -self.y, -self.z)
 
-    def __mul__(self, scale: float) -> 'Vec3':
-        return Vec3(self.x * scale, self.y * scale, self.z * scale)
+    def __mul__(self, scale: float) -> 'Vector':
+        return Vector(self.x * scale, self.y * scale, self.z * scale)
 
     def __rmul__(self, scale):
         return self * scale
 
-    def __truediv__(self, scale: float) -> 'Vec3':
+    def __truediv__(self, scale: float) -> 'Vector':
         scale = 1 / float(scale)
         return self * scale
 
     def __str__(self):
-        return f"Vec3({self.x:.2f}, {self.y:.2f}, {self.z:.2f})"
+        return f"<{self.x:.2f}, {self.y:.2f}, {self.z:.2f})>"
 
     def __repr__(self):
         return self.__str__()
-
+    
     def flat(self):
-        """Returns a new Vec3 that equals this Vec3 but projected onto the ground plane. I.e. where z=0."""
-        return Vec3(self.x, self.y, 0)
+        """Returns a new Vector that equals this Vector but projected onto the ground plane. I.e. where z=0."""
+        return Vector(self.x, self.y, 0)
 
     def length(self):
         """Returns the length of the vector. Also called magnitude and norm."""
         return math.sqrt(self.x**2 + self.y**2 + self.z**2)
 
-    def dist(self, other: 'Vec3') -> float:
+    def dist(self, other: 'Vector') -> float:
         """Returns the distance between this vector and another vector using pythagoras."""
         return (self - other).length()
 
@@ -88,35 +66,65 @@ class Vec3:
         """Returns a vector with the same direction but a length of one."""
         return self / self.length()
 
-    def rescale(self, new_len: float) -> 'Vec3':
+    def rescale(self, new_len: float) -> 'Vector':
         """Returns a vector with the same direction but a different length."""
         return new_len * self.normalized()
 
-    def dot(self, other: 'Vec3') -> float:
+    def dot(self, other: 'Vector') -> float:
         """Returns the dot product."""
         return self.x*other.x + self.y*other.y + self.z*other.z
 
-    def cross(self, other: 'Vec3') -> 'Vec3':
+    def cross(self, other: 'Vector') -> 'Vector':
         """Returns the cross product."""
-        return Vec3(
+        return Vector(
             self.y * other.z - self.z * other.y,
             self.z * other.x - self.x * other.z,
             self.x * other.y - self.y * other.x
         )
 
-    def ang_to(self, ideal: 'Vec3') -> float:
+    def ang_to(self, ideal: 'Vector') -> float:
         """Returns the angle to the ideal vector. Angle will be between 0 and pi."""
         cos_ang = self.dot(ideal) / (self.length() * ideal.length())
         return math.acos(cos_ang)
 
-def polar_to_cartesian(hor_degrees: float, vert_degrees: float, r: int) -> Vec3:
+
+def vectorize(vec: Vector3):
+    return Vector(vec.x, vec.y, vec.z)
+
+
+def polar_to_cartesian(hor_degrees: float, vert_degrees: float, r: int) -> Vector:
     hor_angle = hor_degrees * math.pi/180
     vert_angle = vert_degrees * math.pi/180
     x = r * math.sin(vert_angle) * math.cos(hor_angle)
     y = r * math.sin(vert_angle) * math.sin(hor_angle)
     z = r * math.cos(vert_angle)
-    return Vec3(
-        x, y, z
-    )
+    return Vector(x, y, z)
+
+def get_items(obj) -> list:
+    try:
+        return obj.items()
+    except (AttributeError, TypeError):
+        return None
 
 
+def convert_vecs(obj) -> dict:
+    items = get_items(obj)
+    if items is not None:
+        temp = {}
+        for k, v in obj.items():
+            temp[k] = convert_vecs(v)
+        return temp
+    elif isinstance(obj, Vector3):
+        log("vectorizing")
+        return vectorize(v)
+    elif isinstance(obj, list):
+        return [ convert_vecs(x) for x in v]
+    else:
+        return obj
+
+
+class Packet:
+
+
+def convert_packet(packet: GameTickPacket) -> Packet:
+    packet.

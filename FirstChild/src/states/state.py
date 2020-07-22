@@ -1,15 +1,21 @@
-from enum import Enum
+
+from rlbot.utils.structures.game_data_struct import Physics, GameTickPacket, PlayerInfo
+from rlbot.agents.base_agent import SimpleControllerState, BaseAgent
+
+class State:
+
+    def __init__(self):
+        pass
+
+    def score(self, my_car: PlayerInfo, my_physics: Physics, ball_physics: Physics, team: int, packet: GameTickPacket, agent: BaseAgent) -> float:
+        return None
+
+    def get_output(self, my_car: PlayerInfo, my_physics: Physics, ball_physics: Physics, team: int, packet: GameTickPacket, agent: BaseAgent) -> SimpleControllerState:
+        return None
 
 
-class State(Enum):
-    # High priority
-    ROTATE_BACK     = "rotate_back"         # Reposition to get on the correct side of the ball
-    KICKOFF         = "kickoff"
-    AERIAL_CLEAR    = "aerial_clear"
-    SHOOT           = "shoot"               # Shoot the ball into the opponents goal
-    GET_DOWN_WALL   = "get_down_wall"       # Get down the wall
-    GROUND_SAVE     = "ground_save"         # Save a shot that is `rolling`
-    RECOVER         = "recover"             # When in the air, reposition wheels to land
+
+"""
     # Low priority
     FAST_KICKOFF    = "fast_kickoff"
     WAIT_FOR_TOUCH  = "wait_for_touch"      # Get in position to respond to a predicted touch from player
@@ -34,7 +40,6 @@ class State(Enum):
     DEMO            = "demo"
 
 
-"""
 class WhatIsGoingOn(Enum):
     OPPONNENT_HAS_POSSESION,
     HOW much boost do I have,

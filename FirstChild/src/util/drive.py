@@ -3,7 +3,7 @@ import math
 from rlbot.utils.structures.game_data_struct import PlayerInfo
 
 from util.orientation import Orientation, relative_location
-from util.vec import Vec3
+from util.vector import Vector
 
 
 def limit_to_safe_range(value: float) -> float:
@@ -19,7 +19,7 @@ def limit_to_safe_range(value: float) -> float:
     return value
 
 
-def steer_toward_target(car: PlayerInfo, target: Vec3) -> float:
-    relative = relative_location(Vec3(car.physics.location), Orientation(car.physics.rotation), target)
+def steer_toward_target(car: PlayerInfo, target: Vector) -> float:
+    relative = relative_location(Vector(car.physics.location), Orientation(car.physics.rotation), target)
     angle = math.atan2(relative.y, relative.x)
     return limit_to_safe_range(angle * 5)

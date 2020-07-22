@@ -10,13 +10,17 @@ from util.ball_prediction_analysis import find_slice_at_time
 from util.boost_pad_tracker import BoostPadTracker
 from util.drive import steer_toward_target
 from util.sequence import Sequence, ControlStep
-from util.vec import Vec3
+from util.vector import Vector
 
 from drawing_agent import DrawingAgent, LegendEntry
 
 from decision_agent import DecisionAgent
 from rlbot.utils.logging_utils import log, log_warn
 from rlbot.utils.structures.game_data_struct import Physics
+
+from util.vector import Vector, convert_vecs
+
+from states.state import State
 
 class Agent(DecisionAgent):
 
@@ -49,47 +53,45 @@ class Agent(DecisionAgent):
     def parse_packet(self, packet: GameTickPacket):
         # Gather some information about our car and the ball
         my_car = packet.game_cars[self.index]
-        my_physics = my_car.physics
-        ball_physics = packet.game_ball.physics
-        return (my_car, my_physics, ball_physics)
+        ball = packet.game_ball
+        return (my_car, ball)
 
 
     def draw_state(self, my_physics, ball_physics, packet):
         # Draw ball prediction line for where the ball is going to go
         ball_prediction = self.get_ball_prediction_struct()
-        slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
+        slices = list(map(lambda x : Vector(x.physics.location), ball_prediction.slices))
         self.renderer.draw_polyline_3d(slices[::2], self.renderer.white())
 
         # Write to the car the appropriate string
         self.write_string(my_physics.location, self.display_on_car(my_physics, ball_physics, packet))
 
         # Determine whether or not the ball is going to go into the goal
-        goal_overlap: Vec3 = self.get_goal_overlap()
+        goal_overlap: Vector = self.get_goal_overlap()
         if goal_overlap is not None:        # The ball is going in
             self.draw_circle(goal_overlap, 100)
 
-    def get_goal_overlap(self) -> Vec3:
+    def get_goal_overlap(self) -> Vector:
         ball_prediction = self.get_ball_prediction_struct()
-        slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
+        slices = list(map(lambda x : Vector(x.physics.location), ball_prediction.slices))
         for (index, loc) in enumerate(slices):
             if abs(loc.y) < self.GOAL_THRESHOLD:
                 continue
-
             if index < len(slices) - 1 and abs(slices[index + 1].y) < self.GOAL_THRESHOLD:
                 continue
-
             return loc
 
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         # Parse the packet to gather relevant information
-        my_car, my_physics, ball_physics = self.parse_packet(packet)
+        packet2 = convert_vecs(packet)
+        log(packet2)
+        my_car, ball = self.parse_packet(packet)
 
         # Draw the ball if appropriate
         legend_entries: [LegendEntry] = []
         if self.WRITE_STATE:
             state: str = f"{self.state}"
-            state = state[state.index(".") + 1:]
             legend_entries += [
                 LegendEntry(state, self.renderer.white()),
             ]
@@ -104,13 +106,13 @@ class Agent(DecisionAgent):
         self.draw_legend(legend_entries)
 
         # Draw the state / debug information
-        self.draw_state(my_physics, ball_physics, packet)
+        self.draw_state(my_car.physics, ball.physics, packet)
 
         # Keep our boost pad info updated with which pads are currently active
         self.boost_pad_tracker.update_boost_status(packet)
 
         # For fernado, make the bot shit talk a little bit
-        if (Vec3(my_physics.location).dist(Vec3(ball_physics.location)) < 165):
+        if (my_car.physics.location.dist(ball.physics.location)) < 165:
             self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_CloseOne)
             self.current_flip_physics["contact"] = True
 
@@ -124,7 +126,5 @@ class Agent(DecisionAgent):
                     return controls
 
         # Determine game state (different from draw state)
-        self.state = self.next_state(my_car, my_physics, ball_physics, packet)
-        if self.state not in self.state_map:
-            log_warn("Agent is in an invalid state state=" + str(self.state))
-        return self.state_map[self.state](packet)
+        self.state = self.next_state(my_car, ball, packet)
+        state.get_output(my_car, my_car.physics, ball.physics, team, packet, self)

@@ -2,7 +2,7 @@ from rlbot.utils.rendering.rendering_manager import RenderingManager
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
 from rlbot.utils.structures.game_data_struct import GameTickPacket
-from util.vec import Vec3, polar_to_cartesian
+from util.vector import Vector, polar_to_cartesian
 
 from math import sin
 
@@ -25,9 +25,9 @@ class DrawingAgent(BaseAgent):
         super().__init__(name, team, index)
 
     def draw_physics_info(self, physics: Physics):
-        location = Vec3(physics.location)
-        velocity = Vec3(physics.velocity) * 100
-        angular_velocity = Vec3(physics.velocity)
+        location = physics.location
+        velocity = physics.velocity * 100
+        angular_velocity = physics.angular_velocity
         self.draw_line_with_rect(location, location + velocity, 8, self.renderer.green())
         self.draw_line_with_rect(location, location + angular_velocity, 8, self.renderer.blue())
 
@@ -42,8 +42,7 @@ class DrawingAgent(BaseAgent):
         Writes a string at the provided location
         """
         color = color or self.renderer.cyan()
-        car_location = Vec3(location)
-        self.renderer.draw_string_3d(car_location, scale, scale, str(message), color)
+        self.renderer.draw_string_3d(location, scale, scale, str(message), color)
 
 
     def draw_line_with_rect(self, start, end, size, color=None):
@@ -55,7 +54,7 @@ class DrawingAgent(BaseAgent):
         self.renderer.draw_rect_3d(end, size, size, True, color, True)
 
 
-    def draw_sphere(self, center: Vec3, radius, color=None, num_sides=12):
+    def draw_sphere(self, center: Vector, radius, color=None, num_sides=12):
         # Draw vertical circles
         color = color or self.renderer.red()
         self.draw_circle(
@@ -66,7 +65,7 @@ class DrawingAgent(BaseAgent):
         )
 
 
-    def draw_circle(self, center: Vec3, radius, color=None, vertical=True, horizontal_rotation: float = 0, num_sides=18):
+    def draw_circle(self, center: Vector, radius, color=None, vertical=True, horizontal_rotation: float = 0, num_sides=18):
         """
         Draws a circle at the specified location horizontally.
         """
