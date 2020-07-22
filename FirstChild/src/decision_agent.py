@@ -4,7 +4,7 @@ import pymongo
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
 from rlbot.utils.structures.game_data_struct import GameTickPacket
-from rlbot.utils.logging_utils import log
+from rlbot.utils.logging_utils import log, log_warn
 
 from util.ball_prediction_analysis import find_slice_at_time
 from util.boost_pad_tracker import BoostPadTracker
@@ -15,44 +15,56 @@ from util.orientation import Orientation, relative_location
 
 from drawing_agent import DrawingAgent
 
-WRITE_FLIP_PHYSICS_TO_DB = True
+from state import State
+from typing import Dict, Callable
 
 class DecisionAgent(DrawingAgent):
 
+    # flip_physics database stuff
     current_flip_physics: dict = None
     min_dist: float = 30000
     prev_seq_done: bool = True
 
-    
-    # Whether or not to draw the ball physics and legend on the screen
-    draw_ball_physics: bool = False
+    # Strategy things
+    state: State = State.KICKOFF        # Initial state is kickoff
+
+    # Behavior toggles
+    DRAW_BALL_PHYSICS: bool = False         # Draw some basics physics information on the ball
+    WRITE_FLIP_PHYSICS_TO_DB: bool = True   # Write flip physics info to database
+
+    # Maps state to functions
+    state_map: Dict[str, Callable] = {}
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
-        self.active_sequence: Sequence = None
-        self.boost_pad_tracker = BoostPadTracker()
+        self.state_map = {
+            State.KICKOFF:          self.kickoff,
+            State.FAST_KICKOFF:     self.kickoff,
+            State.RECOVER:          self.recover,
+            State.CLEAR:            self.clear,
+            State.SHOOT:            self.shoot
+        }
+    
+    
+    def next_state(self, my_car, my_physics, ball_physics, packet: GameTickPacket) -> State:
+        return State.SHOOT  # For now all behavior is described in SHOOT, so
+        # always return that as the state
 
-    def initialize_agent(self):
-        # Set up information about the boost pads now that the game is active and the info is available
-        self.boost_pad_tracker.initialize_boosts(self.get_field_info())
 
-    def display_on_car(self, my_physics, ball_physics, packet):
-        """
-        A function that should return what should be printed on the car.
-        """
-        # Default behavior is to print distance between car and ball.
-        # my_physics.location is the location of my car. dist gets the distance
-        # from another location. The f in front of the string is python syntax to
-        # format the string so anything in the {} will be evaluated. The 0.2f rounds
-        # the output to 2 decimal points to help readability.
-        return f"{Vec3(my_physics.location).dist(Vec3(ball_physics.location)):0.2f}"
+    def kickoff(self, packet: GameTickPacket) -> SimpleControllerState:
+        log_warn("I am in an invalid state with no defined behavior.")
 
-    def determine_output(self, my_car, my_physics, ball_physics, packet: GameTickPacket) -> SimpleControllerState:
-        """
-        This function will be called by the framework many times per second. This is where you can
-        see the motion of the ball, etc. and return controls to drive your car.
-        """
-        # Gather some information about our car and the ball
+        
+    def recover(self, packet: GameTickPacket) -> SimpleControllerState:
+        log_warn("I am in an invalid state with no defined behavior.")
+
+        
+    def clear(self, packet: GameTickPacket) -> SimpleControllerState:
+        log_warn("I am in an invalid state with no defined behavior.")
+
+
+    def shoot(self, packet: GameTickPacket) -> SimpleControllerState:
+         # Gather some information about our car and the ball
         my_car = packet.game_cars[self.index]
         car_location = Vec3(my_car.physics.location)
         car_velocity = Vec3(my_car.physics.velocity)
@@ -63,37 +75,12 @@ class DecisionAgent(DrawingAgent):
 
         my_car_ori = Orientation(my_car.physics.rotation)
         car_to_ball = ball_location - car_location
-        car_to_ball_angle = my_car_ori.forward.ang_to(car_to_ball)
-
-
-        # Keep our boost pad info updated with which pads are currently active
-        self.boost_pad_tracker.update_boost_status(packet)
-
-        if (car_location.dist(ball_location) < 165):
-            self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_CloseOne)
-            self.current_flip_physics["contact"] = True
-
-            
+        car_to_ball_angle = my_car_ori.forward.ang_to(car_to_ball)            
         flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
-        # Takes up a lot of space, so don't draw it yet.
-        # self.draw_sphere(flip_point, 100, self.renderer.cyan())
-
-        # This is good to keep at the beginning of get_output. It will allow you to continue
-        # any sequences that you may have started during a previous call to get_output.
-        if self.active_sequence and not self.active_sequence.done:
-            controls = self.active_sequence.tick(packet)
-            if controls is not None:
-                self.prev_seq_done = False
-                return controls
-        #else:
-            # Something is broken. Vec3 and None is being written.
-            #self.write_flip_physics(self.current_flip_physics)
-
-
         target_location = flip_point
 
         if car_location.dist(flip_point) < 1000:
-            if WRITE_FLIP_PHYSICS_TO_DB == True:
+            if self.WRITE_FLIP_PHYSICS_TO_DB == True:
                 # record physics info at beginning of flip
                 self.current_flip_physics = {}
 
@@ -146,6 +133,14 @@ class DecisionAgent(DrawingAgent):
 
         # You can set more controls if you want, like controls.boost.
         return controls
+
+
+    def display_on_car(self, my_physics, ball_physics, packet):
+        """
+        A function that should return what should be printed on the car.
+        """
+        return f"{Vec3(my_physics.location).dist(Vec3(ball_physics.location)):0.2f}"
+
 
     def begin_front_flip(self, packet):
         # Send some quickchat just for fun

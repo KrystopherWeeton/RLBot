@@ -25,18 +25,28 @@ class Agent(DecisionAgent):
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
+        self.active_sequence: Sequence = None
+        self.boost_pad_tracker = BoostPadTracker()
         self.init_db()
     
+    
+    def initialize_agent(self):
+        # Set up information about the boost pads now that the game is active and the info is available
+        self.boost_pad_tracker.initialize_boosts(self.get_field_info())
+    
+
     def init_db(self):
         self.client = pymongo.MongoClient("mongodb+srv://first_child:steven111!@clusterbuster.kjog8.mongodb.net/RocketBot?retryWrites=true&w=majority")
         self.db = self.client.get_database("RocketBot")
         self.flip_physics = self.db.get_collection("flip_physics")
     
+
     def write_flip_physics(self, flip_physics):
         if flip_physics is None:
             log_warn("Attempt to write None to database. Nothing will be written.", {})
             return
         self.flip_physics.insert_one(flip_physics)
+
 
     def parse_packet(self, packet: GameTickPacket):
         # Gather some information about our car and the ball
@@ -45,11 +55,12 @@ class Agent(DecisionAgent):
         ball_physics = packet.game_ball.physics
         return (my_car, my_physics, ball_physics)
 
+
     def draw_state(self, my_physics, ball_physics, packet):
         # Draw ball prediction line for where the ball is going to go
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
-        self.renderer.draw_polyline_3d(slices, self.renderer.white())
+        self.renderer.draw_polyline_3d([::2]], self.renderer.white())
 
         # Write to the car the appropriate string
         self.write_string(my_physics.location, self.display_on_car(my_physics, ball_physics, packet))
@@ -60,6 +71,7 @@ class Agent(DecisionAgent):
             self.draw_circle(goal_overlap, 100)
         else:
             self.renderer.draw_string_2d(1000, 1000, 1, 1, str(Vec3(ball_physics.location)), self.renderer.white())
+
 
     def get_goal_overlap(self) -> Vec3:
         ball_prediction = self.get_ball_prediction_struct()
@@ -73,13 +85,39 @@ class Agent(DecisionAgent):
 
             return loc
 
+
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         # Parse the packet to gather relevant information
         my_car, my_physics, ball_physics = self.parse_packet(packet)
+
         # Draw the ball if appropriate
-        if self.draw_ball_physics:
+        if self.DRAW_BALL_PHYSICS:
             self.draw_legend()
             self.draw_physics_info(ball_physics)
+
         # Draw the state / debug information
         self.draw_state(my_physics, ball_physics, packet)
-        return self.determine_output(my_car, my_physics, ball_physics, packet)
+
+        # Keep our boost pad info updated with which pads are currently active
+        self.boost_pad_tracker.update_boost_status(packet)
+
+        # For fernado, make the bot shit talk a little bit
+        if (Vec3(my_physics.location).dist(Vec3(ball_physics.location)) < 165):
+            self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_CloseOne)
+            self.current_flip_physics["contact"] = True
+
+        # Check for current sequence and continue sequence if there is one
+        if self.active_sequence and not self.active_sequence.done:
+            controls = self.active_sequence.tick(packet)
+            if controls is not None:
+                self.prev_seq_done = False
+                return controls
+        #else:
+            # Something is broken. Vec3 and None is being written.
+            #self.write_flip_physics(self.current_flip_physics)
+
+        # Determine game state (different from draw state)
+        self.state = self.next_state(my_car, my_physics, ball_physics, packet)
+        if self.state not in self.state_map:
+            log_warn("Agent is in an invalid state state=" + str(self.state))
+        return self.state_map[self.state](packet)
