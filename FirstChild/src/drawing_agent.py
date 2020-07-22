@@ -10,6 +10,14 @@ from rlbot.utils.logging_utils import log
 
 from rlbot.utils.structures.game_data_struct import Physics
 
+class LegendEntry:
+    text: str = None
+    color = None
+
+    def __init__(self, text, color):
+        self.text = text
+        self.color = color
+
 class DrawingAgent(BaseAgent):
     
 
@@ -23,9 +31,11 @@ class DrawingAgent(BaseAgent):
         self.draw_line_with_rect(location, location + velocity, 8, self.renderer.green())
         self.draw_line_with_rect(location, location + angular_velocity, 8, self.renderer.blue())
 
-    def draw_legend(self):
-        self.renderer.draw_string_2d(10, 800, 1, 1, "Angular Velocity", self.renderer.blue())
-        self.renderer.draw_string_2d(10, 830, 1, 1, "Velocity", self.renderer.green())
+    def draw_legend(self, entries: [LegendEntry]):
+        offset = 600
+        for entry in entries:
+            self.renderer.draw_string_2d(10, offset, 1, 1, entry.text, entry.color)
+            offset += 30
 
     def write_string(self, location, message, scale=1, color=None):
         """

@@ -30,6 +30,7 @@ class DecisionAgent(DrawingAgent):
 
     # Behavior toggles
     DRAW_BALL_PHYSICS: bool = False         # Draw some basics physics information on the ball
+    WRITE_STATE: bool = True
     WRITE_FLIP_PHYSICS_TO_DB: bool = True   # Write flip physics info to database
 
     # Maps state to functions
@@ -139,7 +140,9 @@ class DecisionAgent(DrawingAgent):
         """
         A function that should return what should be printed on the car.
         """
-        return f"{Vec3(my_physics.location).dist(Vec3(ball_physics.location)):0.2f}"
+        state: str = f"{self.state}"
+        return state[state.index(".") + 1:]
+        #return f"{Vec3(my_physics.location).dist(Vec3(ball_physics.location)):0.2f}"
 
 
     def begin_front_flip(self, packet):

@@ -12,7 +12,7 @@ from util.drive import steer_toward_target
 from util.sequence import Sequence, ControlStep
 from util.vec import Vec3
 
-from drawing_agent import DrawingAgent
+from drawing_agent import DrawingAgent, LegendEntry
 
 from decision_agent import DecisionAgent
 from rlbot.utils.logging_utils import log, log_warn
@@ -60,7 +60,7 @@ class Agent(DecisionAgent):
         # Draw ball prediction line for where the ball is going to go
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vec3(x.physics.location), ball_prediction.slices))
-        self.renderer.draw_polyline_3d([::2]], self.renderer.white())
+        self.renderer.draw_polyline_3d(slices[::2], self.renderer.white())
 
         # Write to the car the appropriate string
         self.write_string(my_physics.location, self.display_on_car(my_physics, ball_physics, packet))
@@ -69,9 +69,6 @@ class Agent(DecisionAgent):
         goal_overlap: Vec3 = self.get_goal_overlap()
         if goal_overlap is not None:        # The ball is going in
             self.draw_circle(goal_overlap, 100)
-        else:
-            self.renderer.draw_string_2d(1000, 1000, 1, 1, str(Vec3(ball_physics.location)), self.renderer.white())
-
 
     def get_goal_overlap(self) -> Vec3:
         ball_prediction = self.get_ball_prediction_struct()
@@ -91,9 +88,23 @@ class Agent(DecisionAgent):
         my_car, my_physics, ball_physics = self.parse_packet(packet)
 
         # Draw the ball if appropriate
+        legend_entries: [LegendEntry] = []
+        if self.WRITE_STATE:
+            state: str = f"{self.state}"
+            state = state[state.index(".") + 1:]
+            legend_entries += [
+                LegendEntry(state, self.renderer.white()),
+            ]
+
         if self.DRAW_BALL_PHYSICS:
-            self.draw_legend()
+            legend_entries += [
+                LegendEntry("Velocity", self.renderer.green()),
+                LegendEntry("Angular Velocity", self.renderer.blue()),
+            ]
             self.draw_physics_info(ball_physics)
+
+        
+        self.draw_legend(legend_entries)
 
         # Draw the state / debug information
         self.draw_state(my_physics, ball_physics, packet)
