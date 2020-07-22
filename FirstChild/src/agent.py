@@ -100,7 +100,6 @@ class Agent(DecisionAgent):
                 LegendEntry("Angular Velocity", self.renderer.blue()),
             ]
             self.draw_physics_info(ball_physics)
-
         
         self.draw_legend(legend_entries)
 
@@ -120,10 +119,9 @@ class Agent(DecisionAgent):
             controls = self.active_sequence.tick(packet)
             if controls is not None:
                 self.prev_seq_done = False
-                return controls
-        #else:
-            # Something is broken. Vec3 and None is being written.
-            #self.write_flip_physics(self.current_flip_physics)
+                continue_sequence = self.sequence_hook(controls)
+                if continue_sequence:
+                    return controls
 
         # Determine game state (different from draw state)
         self.state = self.next_state(my_car, my_physics, ball_physics, packet)

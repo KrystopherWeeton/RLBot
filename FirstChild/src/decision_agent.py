@@ -42,11 +42,13 @@ class DecisionAgent(DrawingAgent):
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
         self.state_map = {
+            State.ROTATE_BACK:      self.rotate_back,
             State.KICKOFF:          self.kickoff,
-            State.FAST_KICKOFF:     self.kickoff,
+            State.AERIAL_CLEAR:     self.aerial_clear,
+            State.SHOOT:            self.shoot,
+            State.GET_DOWN_WALL:    self.get_down_wall,
+            State.GROUND_SAVE:      self.ground_save,
             State.RECOVER:          self.recover,
-            State.CLEAR:            self.clear,
-            State.SHOOT:            self.shoot
         }
 
     def goal_center(self, team: int) -> Vec3:
@@ -73,7 +75,17 @@ class DecisionAgent(DrawingAgent):
         if boost:
             controls.boost = True
         return controls
-    
+   
+
+    def sequence_hook(self, controls: SimpleControllerState) -> bool:
+        """
+        Placeholder for if we want to do something when a sequence is being run, e.g
+        cancel the sequence or do something else.
+        Return true to continue sequence, false to cancel
+        """
+        return True
+      
+
     def next_state(self, my_car, my_physics, ball_physics, packet: GameTickPacket) -> State:
         # Cast everything if necessary
         car_location = Vec3(my_physics.location)
@@ -88,17 +100,18 @@ class DecisionAgent(DrawingAgent):
         # always return that as the state
 
 
+        
+    def rotate_back(self, packet: GameTickPacket) -> SimpleControllerState:
+        my_car = packet.game_cars[self.index]
+        target_location = self.goal_center(my_car.team)
+        return self.move_towards_point(my_car, target_location, True)  
+
+
     def kickoff(self, packet: GameTickPacket) -> SimpleControllerState:
         log_warn("I am in an invalid state with no defined behavior.", {})
 
-        
-    def recover(self, packet: GameTickPacket) -> SimpleControllerState:
-        my_car = packet.game_cars[self.index]
-        target_location = self.goal_center(my_car.team)
-        return self.move_towards_point(my_car, target_location, True)
 
-        
-    def clear(self, packet: GameTickPacket) -> SimpleControllerState:
+    def aerial_clear(self, packet: GameTickPacket) -> SimpleControllerState:
         log_warn("I am in an invalid state with no defined behavior.", {})
 
 
@@ -117,6 +130,10 @@ class DecisionAgent(DrawingAgent):
         car_to_ball_angle = my_car_ori.forward.ang_to(car_to_ball)            
         flip_point = Vec3(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
         target_location = flip_point
+
+        if not self.prev_seq_done and self.WRITE_FLIP_PHYSICS_TO_DB:
+            self.prev_seq_done = True
+            self.write_flip_physics(self.current_flip_physics)
 
         #self.draw_sphere(self.goal_center(my_car.team), 20, self.renderer.red())
 
@@ -145,7 +162,7 @@ class DecisionAgent(DrawingAgent):
                 self.current_flip_physics["ball_velo_y"] = ball_velocity[1]
                 self.current_flip_physics["ball_velo_z"] = ball_velocity[2]
                 self.current_flip_physics["ball_velo_mag"] = ball_velocity.length()
-
+                
                 self.current_flip_physics["ball_loc_x"] = ball_location[0]
                 self.current_flip_physics["ball_loc_y"] = ball_location[1]
                 self.current_flip_physics["ball_loc_z"] = ball_location[2]
@@ -175,6 +192,17 @@ class DecisionAgent(DrawingAgent):
         # You can set more controls if you want, like controls.boost.
         return controls
 
+    def get_down_wall(self, packet: GameTickPacket) -> SimpleControllerState:
+        log_warn("I am in an invalid state with no defined behavior.", {})
+
+
+    def ground_save(self, packet: GameTickPacket) -> SimpleControllerState:
+        log_warn("I am in an invalid state with no defined behavior.", {})
+
+
+    def recover(self, packet: GameTickPacket) -> SimpleControllerState:
+        log_warn("I am in an invalid state with no defined behavior.", {})
+
 
     def display_on_car(self, my_physics, ball_physics, packet):
         """
@@ -187,7 +215,7 @@ class DecisionAgent(DrawingAgent):
 
     def begin_front_flip(self, packet):
         # Send some quickchat just for fun
-        self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Information_IGotIt)
+        # self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Information_IGotIt)
 
         # Do a front flip. We will be committed to this for a few seconds and the bot will ignore other
         # logic during that time because we are setting the active_sequence.
