@@ -57,6 +57,9 @@ class DrawingAgent(BaseAgent):
         self.renderer.draw_line_3d(start, end, color)
         self.renderer.draw_rect_3d(end, size, size, True, color, True)
 
+    def draw_rects(self, rects: [Vector], color):
+        for r in rects:
+            self.renderer.draw_rect_3d(r, 10, 10, True, color, True)
 
     def draw_sphere(self, center: Vector, radius, color=None, num_sides=12):
         # Draw vertical circles
