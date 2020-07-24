@@ -38,6 +38,9 @@ class DrawingAgent(BaseAgent):
             self.renderer.draw_string_2d(10, offset, 1, 1, entry.text, entry.color)
             offset += 30
 
+    def draw_polyline(self, vecs: [Vector], color):
+        self.renderer.draw_polyline_3d(vecs, color)
+
     def write_string(self, location, message, scale=1, color=None):
         """
         Writes a string at the provided location
