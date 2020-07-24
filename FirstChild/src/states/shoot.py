@@ -7,15 +7,22 @@ from util.vector import Vector
 from util.orientation import Orientation
 from util.ball_prediction_analysis import find_slice_at_time
 from util.drive import steer_toward_target
+from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
 from drawing_agent import DrawingAgent
 
 class Shoot(State):
 
+<<<<<<< HEAD
     NO_BOOST_MAX_SPEED: float = 1410.0
     CONTACT_Z_THRESH: float = 120.0
     contactPoint: Vector = None
     
+=======
+
+    def get_time(time, slice: Slice):
+        return slice.game_seconds - time
+>>>>>>> 1fb5c66dec7fcd3b07f6041b728905a68c6537c6
     
     def score(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> float:
         return None
