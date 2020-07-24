@@ -14,6 +14,7 @@ from util.boost_pad_tracker import BoostPadTracker
 from util.sequence import Sequence, ControlStep
 from util.vector import Vector
 from util.orientation import Orientation, relative_location
+from util.drive import steer_toward_target
 
 from drawing_agent import DrawingAgent
 
@@ -87,7 +88,7 @@ class DecisionAgent(DrawingAgent):
       
 
     def next_state(self, parsed_packet: ParsedPacket, packet: rl.GameTickPacket) -> State:
-        return self.SHOOT
+        #return self.SHOOT
         # Cast everything if necessary
         car_location = parsed_packet.my_car.physics.location
         ball_location = parsed_packet.ball.physics.location
@@ -95,7 +96,7 @@ class DecisionAgent(DrawingAgent):
         # Check if we are on the wrong side of the ball
         signed_dist = self.signed_dist_to_ball(car_location, ball_location, parsed_packet.my_car.team)
         if (signed_dist < 0):
-            return self.RECOVER
+            return self.ROTATE_BACK
 
         return self.SHOOT # For now all behavior is described in SHOOT, so
         # always return that as the state

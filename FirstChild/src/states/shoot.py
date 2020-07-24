@@ -14,11 +14,12 @@ from drawing_agent import DrawingAgent
 class Shoot(State):
 
     NO_BOOST_MAX_SPEED: float = 1410.0
+    DELTA_T_THRESH: float = 0.1
     CONTACT_Z_THRESH: float = 120.0
     contactPoint: Vector = None
     
 
-    def get_time(time, slice: Slice):
+    def get_time(self, time, slice: Slice):
         return slice.game_seconds - time
     
     def score(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> float:
@@ -33,14 +34,31 @@ class Shoot(State):
             pos = elem.physics.location
             if(i == 0 or i == len(slices) - 1):
                 continue
-            elif(pos.z < slices[i - 1].physics.location.z and pos.z < slices[i + 1].physics.location.z):
+            #elif(pos.z <= slices[i - 1].physics.location.z and pos.z <= slices[i + 1].physics.location.z):
+            elif(pos.z < self.CONTACT_Z_THRESH):
                 candidates.append(elem)
-        agent.draw_rects(candidates, agent.renderer.red())
+        #agent.draw_rects(candidates, agent.renderer.red())
 
         # calculate estimated time to reach each candidate
         init_time = slices[0].game_seconds
+        optimalPoint = None
+        optimalDelta = 0
         for i, cand in enumerate(candidates):
-            ball_time = self.get_time(init_time, cand)
+            ballTime = self.get_time(init_time, cand)
+            dist = carPhysics.location.dist(Vector(cand.physics.location))
+
+            carTime = dist / carPhysics.velocity.length()
+            deltaTime = carTime - ballTime
+            if(deltaTime < self.DELTA_T_THRESH and deltaTime > optimalDelta):
+                optimalDelta = deltaTime
+                optimalPoint = cand.physics.location
+            
+        if(optimalPoint != None):
+            self.contactPoint = Vector(optimalPoint)
+            agent.draw_rects([optimalPoint], agent.renderer.blue())
+            agent.write_string(optimalPoint, f"{optimalDelta:.2f}", 1, agent.renderer.lime())
+        else:
+            self.contactPoint = None
             
 
     def get_output(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: DrawingAgent) -> SimpleControllerState:
@@ -53,12 +71,18 @@ class Shoot(State):
         ball_prediction = agent.get_ball_prediction_struct()
         slices = list(map(lambda x : Vector(x.physics.location), ball_prediction.slices))
 
-        self.chooseContactPoint(ball_prediction.slices, my_car.physics, agent)
+        
 
         my_car_ori = Orientation(my_car.physics.rotation)
         car_to_ball = ball_location - car_location
         car_to_ball_angle = my_car_ori.forward.ang_to(car_to_ball)
-        flip_point = Vector(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
+
+        self.chooseContactPoint(ball_prediction.slices, my_car.physics, agent)
+        
+        if(self.contactPoint == None):
+            flip_point = Vector(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
+        else:
+            flip_point = self.contactPoint
         target_location = flip_point
 
         if not agent.prev_seq_done and agent.WRITE_FLIP_PHYSICS_TO_DB:
@@ -67,7 +91,7 @@ class Shoot(State):
 
         #self.draw_sphere(self.goal_center(my_car.team), 20, self.renderer.red())
 
-        if car_location.dist(flip_point) < 1000:
+        if car_location.dist(flip_point) < 500 and self.contactPoint != None:
             if agent.WRITE_FLIP_PHYSICS_TO_DB == True:
                 # record physics info at beginning of flip
                 agent.current_flip_physics = {}
@@ -99,7 +123,7 @@ class Shoot(State):
 
                 agent.current_flip_physics["contact"] = False
 
-            #return agent.begin_front_flip(packet)
+            return agent.begin_front_flip(packet)
 
         # Draw target to show where the bot is attempting to go
         agent.draw_line_with_rect(car_location, target_location, 8, agent.renderer.cyan())

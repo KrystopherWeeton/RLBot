@@ -10,5 +10,5 @@ class RotateBack(State):
         return None
 
     def get_output(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> SimpleControllerState:
-        target_location = goal_center(parsed_packet.my_care.team)
-        return self.move_towards_point(parsed_packet.my_car, target_location, True) 
+        target_location = agent.field_info.my_goal.location
+        return agent.move_towards_point(parsed_packet.my_car, target_location, True) 
