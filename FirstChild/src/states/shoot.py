@@ -12,7 +12,10 @@ from drawing_agent import DrawingAgent
 
 class Shoot(State):
 
-    CONTACT_Z_THRESH: float = 120
+    NO_BOOST_MAX_SPEED: float = 1410.0
+    CONTACT_Z_THRESH: float = 120.0
+    contactPoint: Vector = None
+    
     
     def score(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> float:
         return None
@@ -25,9 +28,13 @@ class Shoot(State):
         for i, pos in enumerate(slices):
             if(i == 0 or i == len(slices) - 1):
                 continue
-            elif(pos.z < slices[i - 1].z and pos.z > slices[i + 1].z):
+            elif(pos.z < slices[i - 1].z and pos.z < slices[i + 1].z):
                 candidates.append(pos)
-        agent.draw_polyline(candidates[::3], agent.renderer.red())
+        agent.draw_rects(candidates, agent.renderer.red())
+
+        # calculate estimated time to reach each candidate
+        for i, pos in enumerate(candidates):
+            
 
     def get_output(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: DrawingAgent) -> SimpleControllerState:
          # Gather some information about our car and the ball

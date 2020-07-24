@@ -101,11 +101,11 @@ class DecisionAgent(DrawingAgent):
         # always return that as the state
 
 
-    def display_on_car(self, parsed_packet, packet):
+    def display_on_car(self, parsed_packet : ParsedPacket, packet):
         """
         A function that should return what should be printed on the car.
         """
-        return f"{parsed_packet.my_car.physics.location}"
+        return f"{parsed_packet.my_car.physics.velocity.length()}"
         # return f"{self.state.__class__.__name__}"
         # return f"{my_physics.location.dist(ball_physics.location):0.2f}"
 
