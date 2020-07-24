@@ -4,9 +4,10 @@ import pymongo
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
 import rlbot.utils.structures.game_data_struct as rl
-from util.packet import ParsedPacket
+from util.packet import ParsedPacket, FieldInfoPacket
 
 from rlbot.utils.logging_utils import log, log_warn
+
 
 from util.ball_prediction_analysis import find_slice_at_time
 from util.boost_pad_tracker import BoostPadTracker
@@ -25,9 +26,6 @@ from states.get_down_wall import GetDownWall
 from states.ground_save import GroundSave
 from states.recover import Recover
 class DecisionAgent(DrawingAgent):
-
-    # The minimum y value that the ball should have for marking a goal
-    GOAL_THRESHOLD = 5180
 
     # flip_physics database stuff
     current_flip_physics: dict = None
@@ -51,21 +49,20 @@ class DecisionAgent(DrawingAgent):
     GROUND_SAVE = GroundSave()
     RECOVER = Recover()
 
+    # fieldInfo
+    field_info: FieldInfoPacket = None
+
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
 
-    def goal_center(self, team: int) -> Vector:
-        x: float = 0
-        y: float = self.GOAL_THRESHOLD if team == 1 else -self.GOAL_THRESHOLD
-        z: float = 100
-        return Vector(x, y, z)
+
 
     def signed_dist_to_ball(self, car_location: Vector, ball_location: Vector, team) -> float:
         """
         Returns signed y distance from car to the ball.
         The sign represents the direction. E.g. a positive sign indicates towards opponents goal.
         """
-        team_goal_y = self.goal_center(team).y
+        team_goal_y = self.field_info.my_goal.location.y
         car_dist = team_goal_y - car_location.y
         ball_dist = team_goal_y - ball_location.y
         return ball_dist - car_dist
@@ -108,9 +105,8 @@ class DecisionAgent(DrawingAgent):
         """
         A function that should return what should be printed on the car.
         """
-        state: str = f"{self.state}"
-        return state
-        #return f"{my_physics.location.dist(ball_physics.location):0.2f}"
+        return f"{self.state.__class__.__name__}"
+        # return f"{my_physics.location.dist(ball_physics.location):0.2f}"
 
 
     def begin_front_flip(self, packet):

@@ -18,10 +18,10 @@ from decision_agent import DecisionAgent
 from rlbot.utils.logging_utils import log, log_warn
 
 import rlbot.utils.structures.game_data_struct as rl
-from util.packet import ParsedPacket, Physics
+from util.packet import ParsedPacket, Physics, parse_field_info
 
 from util.vector import Vector
-from util.packet import parse_packet, ParsedPacket
+from util.packet import parse_packet, ParsedPacket, FieldInfoPacket
 
 from states.state import State
 
@@ -60,7 +60,7 @@ class Agent(DecisionAgent):
         self.renderer.draw_polyline_3d(slices[::2], self.renderer.white())
 
         # Write to the car the appropriate string
-        # self.write_string(parsed_packet.my_car.physics.location, self.display_on_car(parsed_packet, packet))
+        self.write_string(parsed_packet.my_car.physics.location, self.display_on_car(parsed_packet, packet))
 
         # Determine whether or not the ball is going to go into the goal
         goal_overlap: Vector = self.get_goal_overlap()
@@ -70,10 +70,11 @@ class Agent(DecisionAgent):
     def get_goal_overlap(self) -> Vector:
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vector(x.physics.location), ball_prediction.slices))
+        threshold = self.field_info.my_goal.location.y
         for (index, loc) in enumerate(slices):
-            if abs(loc.y) < self.GOAL_THRESHOLD:
+            if abs(loc.y) < threshold:
                 continue
-            if index < len(slices) - 1 and abs(slices[index + 1].y) < self.GOAL_THRESHOLD:
+            if index < len(slices) - 1 and abs(slices[index + 1].y) < threshold:
                 continue
             return loc
 
@@ -83,13 +84,14 @@ class Agent(DecisionAgent):
         parsed_packet = parse_packet(self.team, packet)
         my_car = parsed_packet.my_car
         ball = parsed_packet.ball
+        self.field_info = parse_field_info(self.team, self.get_field_info())
 
         # Draw the ball if appropriate
         legend_entries: [LegendEntry] = []
         if self.WRITE_STATE:
             state: str = f"{self.state}"
             legend_entries += [
-                LegendEntry(state, self.renderer.white()),
+                LegendEntry(f"{self.state.__class__.__name__}", self.renderer.white()),
             ]
 
         if self.DRAW_BALL_PHYSICS:
@@ -110,7 +112,8 @@ class Agent(DecisionAgent):
         # For fernado, make the bot shit talk a little bit
         if (my_car.physics.location.dist(ball.physics.location)) < 165:
             self.send_quick_chat(team_only=False, quick_chat=QuickChatSelection.Reactions_CloseOne)
-            self.current_flip_physics["contact"] = True
+            if self.current_flip_physics:
+                self.current_flip_physics["contact"] = True
 
         # Check for current sequence and continue sequence if there is one
         if self.active_sequence and not self.active_sequence.done:
