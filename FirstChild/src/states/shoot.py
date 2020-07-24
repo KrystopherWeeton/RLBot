@@ -1,4 +1,5 @@
 from rlbot.utils.structures.game_data_struct import Physics, GameTickPacket, PlayerInfo
+from rlbot.utils.rendering.rendering_manager import RenderingManager
 from rlbot.agents.base_agent import SimpleControllerState, BaseAgent
 from states.state import State
 from util.packet import ParsedPacket
@@ -7,11 +8,21 @@ from util.orientation import Orientation
 from util.ball_prediction_analysis import find_slice_at_time
 from util.drive import steer_toward_target
 
+from agent import Agent
+
 class Shoot(State):
 
+    CONTACT_Z_THRESH: float = 100
     
     def score(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> float:
         return None
+
+    """
+    Scan for potential contact points and choose the closest feasible one
+    """
+    def chooseContactPoint(self, slices, carPhysics, agent: Agent):
+        candidates = list(filter(lambda pos : pos.z < self.CONTACT_Z_THRESH, slices))
+        #agent.dr
 
     def get_output(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> SimpleControllerState:
          # Gather some information about our car and the ball
@@ -25,7 +36,7 @@ class Shoot(State):
 
         my_car_ori = Orientation(my_car.physics.rotation)
         car_to_ball = ball_location - car_location
-        car_to_ball_angle = my_car_ori.forward.ang_to(car_to_ball)            
+        car_to_ball_angle = my_car_ori.forward.ang_to(car_to_ball)
         flip_point = Vector(find_slice_at_time(ball_prediction, packet.game_info.seconds_elapsed + 1).physics.location)
         target_location = flip_point
 
