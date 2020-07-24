@@ -40,7 +40,7 @@ class DecisionAgent(DrawingAgent):
     # Behavior toggles
     DRAW_BALL_PHYSICS: bool = False         # Draw some basics physics information on the ball
     WRITE_STATE: bool = True
-    WRITE_FLIP_PHYSICS_TO_DB: bool = True   # Write flip physics info to database
+    WRITE_FLIP_PHYSICS_TO_DB: bool = False   # Write flip physics info to database
 
     # States
     ROTATE_BACK: State = RotateBack()
