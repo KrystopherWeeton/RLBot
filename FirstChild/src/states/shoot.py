@@ -13,16 +13,13 @@ from drawing_agent import DrawingAgent
 
 class Shoot(State):
 
-<<<<<<< HEAD
     NO_BOOST_MAX_SPEED: float = 1410.0
     CONTACT_Z_THRESH: float = 120.0
     contactPoint: Vector = None
     
-=======
 
     def get_time(time, slice: Slice):
         return slice.game_seconds - time
->>>>>>> 1fb5c66dec7fcd3b07f6041b728905a68c6537c6
     
     def score(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> float:
         return None
@@ -30,17 +27,20 @@ class Shoot(State):
     """
     Scan for potential contact points and choose the closest feasible one
     """
-    def chooseContactPoint(self, slices, carPhysics, agent: DrawingAgent):
+    def chooseContactPoint(self, slices: [Slice], carPhysics, agent: DrawingAgent):
         candidates = []
-        for i, pos in enumerate(slices):
+        for i, elem in enumerate(slices):
+            pos = elem.physics.location
             if(i == 0 or i == len(slices) - 1):
                 continue
-            elif(pos.z < slices[i - 1].z and pos.z < slices[i + 1].z):
-                candidates.append(pos)
+            elif(pos.z < slices[i - 1].physics.location.z and pos.z < slices[i + 1].physics.location.z):
+                candidates.append(elem)
         agent.draw_rects(candidates, agent.renderer.red())
 
         # calculate estimated time to reach each candidate
-        for i, pos in enumerate(candidates):
+        init_time = slices[0].game_seconds
+        for i, cand in enumerate(candidates):
+            ball_time = self.get_time(init_time, cand)
             
 
     def get_output(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: DrawingAgent) -> SimpleControllerState:
@@ -53,7 +53,7 @@ class Shoot(State):
         ball_prediction = agent.get_ball_prediction_struct()
         slices = list(map(lambda x : Vector(x.physics.location), ball_prediction.slices))
 
-        self.chooseContactPoint(slices, my_car.physics, agent)
+        self.chooseContactPoint(ball_prediction.slices, my_car.physics, agent)
 
         my_car_ori = Orientation(my_car.physics.rotation)
         car_to_ball = ball_location - car_location
