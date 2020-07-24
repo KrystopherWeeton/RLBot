@@ -6,9 +6,13 @@ from util.vector import Vector
 from util.orientation import Orientation
 from util.ball_prediction_analysis import find_slice_at_time
 from util.drive import steer_toward_target
+from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
 class Shoot(State):
 
+
+    def get_time(time, slice: Slice):
+        return slice.game_seconds - time
     
     def score(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> float:
         return None
