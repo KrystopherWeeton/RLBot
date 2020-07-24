@@ -78,19 +78,33 @@ class GoalInfo:
     height: float = None
 
     def __init__(self, other: rl.GoalInfo):
-        self.physics = Physics(other.physics)
-        self.latest_touch = Touch(other.latest_touch)
+        self.location = Vector(other.location)
+        self.team_num = other.team_num
+        self.direction = Vector(other.direction)
+        self.width = other.width
+        self.height = other.height
 
 
 
 class FieldInfoPacket:
-    goals: [GoalInfo] = None
+    my_goal: GoalInfo = None
+    opponent_goal: GoalInfo = None
     num_goals: int = None
 
-    def __init__(self, other: rl.FieldInfoPacket):
+    def __init__(self, my_team: int, other: rl.FieldInfoPacket):
         self.num_goals = other.num_goals
-        self.goals = [GoalInfo(info) for info in other.goals]
+        goals = [GoalInfo(info) for info in other.goals]
+        if goals[0].team_num == my_team:
+            self.my_goal = goals[0]
+            self.opponent_goal = goals[1]
+        else:
+            self.my_goal = goals[1]
+            self.opponent_goal = goals[0]
+
 
 
 def parse_packet(player_index, packet) -> ParsedPacket:
     return ParsedPacket(player_index, packet)
+
+def parse_field_info(my_team, packet: rl.FieldInfoPacket) -> FieldInfoPacket:
+    return FieldInfoPacket(my_team, packet)
