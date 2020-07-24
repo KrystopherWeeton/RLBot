@@ -8,11 +8,11 @@ from util.orientation import Orientation
 from util.ball_prediction_analysis import find_slice_at_time
 from util.drive import steer_toward_target
 
-from agent import Agent
+from drawing_agent import DrawingAgent
 
 class Shoot(State):
 
-    CONTACT_Z_THRESH: float = 100
+    CONTACT_Z_THRESH: float = 120
     
     def score(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> float:
         return None
@@ -20,11 +20,16 @@ class Shoot(State):
     """
     Scan for potential contact points and choose the closest feasible one
     """
-    def chooseContactPoint(self, slices, carPhysics, agent: Agent):
-        candidates = list(filter(lambda pos : pos.z < self.CONTACT_Z_THRESH, slices))
-        #agent.dr
+    def chooseContactPoint(self, slices, carPhysics, agent: DrawingAgent):
+        candidates = []
+        for i, pos in enumerate(slices):
+            if(i == 0 or i == len(slices) - 1):
+                continue
+            elif(pos.z < slices[i - 1].z and pos.z > slices[i + 1].z):
+                candidates.append(pos)
+        agent.draw_polyline(candidates[::3], agent.renderer.red())
 
-    def get_output(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> SimpleControllerState:
+    def get_output(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: DrawingAgent) -> SimpleControllerState:
          # Gather some information about our car and the ball
         my_car = parsed_packet.my_car
         car_location = my_car.physics.location
@@ -33,6 +38,8 @@ class Shoot(State):
         ball_velocity = parsed_packet.ball.physics.velocity
         ball_prediction = agent.get_ball_prediction_struct()
         slices = list(map(lambda x : Vector(x.physics.location), ball_prediction.slices))
+
+        self.chooseContactPoint(slices, my_car.physics, agent)
 
         my_car_ori = Orientation(my_car.physics.rotation)
         car_to_ball = ball_location - car_location
@@ -78,7 +85,7 @@ class Shoot(State):
 
                 agent.current_flip_physics["contact"] = False
 
-            return agent.begin_front_flip(packet)
+            #return agent.begin_front_flip(packet)
 
         # Draw target to show where the bot is attempting to go
         agent.draw_line_with_rect(car_location, target_location, 8, agent.renderer.cyan())

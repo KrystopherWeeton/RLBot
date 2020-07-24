@@ -105,7 +105,8 @@ class DecisionAgent(DrawingAgent):
         """
         A function that should return what should be printed on the car.
         """
-        return f"{self.state.__class__.__name__}"
+        return f"{parsed_packet.my_car.physics.location}"
+        # return f"{self.state.__class__.__name__}"
         # return f"{my_physics.location.dist(ball_physics.location):0.2f}"
 
 

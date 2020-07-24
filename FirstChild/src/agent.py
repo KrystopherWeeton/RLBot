@@ -57,7 +57,7 @@ class Agent(DecisionAgent):
         # Draw ball prediction line for where the ball is going to go
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vector(x.physics.location), ball_prediction.slices))
-        self.renderer.draw_polyline_3d(slices[::2], self.renderer.white())
+        self.renderer.draw_polyline_3d(slices[::10], self.renderer.white())
 
         # Write to the car the appropriate string
         self.write_string(parsed_packet.my_car.physics.location, self.display_on_car(parsed_packet, packet))
