@@ -1,19 +1,25 @@
 from rlbot.utils.structures.game_data_struct import Physics, GameTickPacket, PlayerInfo
 from rlbot.agents.base_agent import SimpleControllerState, BaseAgent
 from states.state import State
+from util.packet import ParsedPacket
+from util.vector import Vector
+from util.orientation import Orientation
+from util.ball_prediction_analysis import find_slice_at_time
+from util.drive import steer_toward_target
 
 class Shoot(State):
 
     
-    def score(self, my_car: PlayerInfo, my_physics: Physics, ball_physics: Physics, team: int, packet: GameTickPacket, agent: BaseAgent) -> float:
+    def score(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> float:
         return None
 
-    def get_output(self, my_car: PlayerInfo, my_physics: Physics, ball_physics: Physics, team: int, packet: GameTickPacket, agent: BaseAgent) -> SimpleControllerState:
+    def get_output(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> SimpleControllerState:
          # Gather some information about our car and the ball
+        my_car = parsed_packet.my_car
         car_location = my_car.physics.location
         car_velocity = my_car.physics.velocity
-        ball_location = packet.game_ball.physics.location
-        ball_velocity = packet.game_ball.physics.velocity
+        ball_location = parsed_packet.ball.physics.location
+        ball_velocity = parsed_packet.ball.physics.velocity
         ball_prediction = agent.get_ball_prediction_struct()
         slices = list(map(lambda x : Vector(x.physics.location), ball_prediction.slices))
 
@@ -64,7 +70,7 @@ class Shoot(State):
             return agent.begin_front_flip(packet)
 
         # Draw target to show where the bot is attempting to go
-        agent.draw_line_with_rect(car_location, target_location, 8, self.renderer.cyan())
+        agent.draw_line_with_rect(car_location, target_location, 8, agent.renderer.cyan())
 
         # Set the final controls based off of above decision making
         controls = SimpleControllerState()

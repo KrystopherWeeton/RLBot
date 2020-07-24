@@ -16,9 +16,12 @@ from drawing_agent import DrawingAgent, LegendEntry
 
 from decision_agent import DecisionAgent
 from rlbot.utils.logging_utils import log, log_warn
-from rlbot.utils.structures.game_data_struct import Physics
 
-from util.vector import Vector, convert_vecs
+import rlbot.utils.structures.game_data_struct as rl
+from util.packet import ParsedPacket, Physics
+
+from util.vector import Vector
+from util.packet import parse_packet, ParsedPacket
 
 from states.state import State
 
@@ -50,21 +53,14 @@ class Agent(DecisionAgent):
         self.flip_physics.insert_one(flip_physics)
 
 
-    def parse_packet(self, packet: GameTickPacket):
-        # Gather some information about our car and the ball
-        my_car = packet.game_cars[self.index]
-        ball = packet.game_ball
-        return (my_car, ball)
-
-
-    def draw_state(self, my_physics, ball_physics, packet):
+    def draw_state(self, parsed_packet: ParsedPacket, packet: rl.GameTickPacket):
         # Draw ball prediction line for where the ball is going to go
         ball_prediction = self.get_ball_prediction_struct()
         slices = list(map(lambda x : Vector(x.physics.location), ball_prediction.slices))
         self.renderer.draw_polyline_3d(slices[::2], self.renderer.white())
 
         # Write to the car the appropriate string
-        self.write_string(my_physics.location, self.display_on_car(my_physics, ball_physics, packet))
+        # self.write_string(parsed_packet.my_car.physics.location, self.display_on_car(parsed_packet, packet))
 
         # Determine whether or not the ball is going to go into the goal
         goal_overlap: Vector = self.get_goal_overlap()
@@ -84,9 +80,9 @@ class Agent(DecisionAgent):
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         # Parse the packet to gather relevant information
-        packet2 = convert_vecs(packet)
-        log(packet2)
-        my_car, ball = self.parse_packet(packet)
+        parsed_packet = parse_packet(self.team, packet)
+        my_car = parsed_packet.my_car
+        ball = parsed_packet.ball
 
         # Draw the ball if appropriate
         legend_entries: [LegendEntry] = []
@@ -106,7 +102,7 @@ class Agent(DecisionAgent):
         self.draw_legend(legend_entries)
 
         # Draw the state / debug information
-        self.draw_state(my_car.physics, ball.physics, packet)
+        self.draw_state(parsed_packet, packet)
 
         # Keep our boost pad info updated with which pads are currently active
         self.boost_pad_tracker.update_boost_status(packet)
@@ -126,5 +122,5 @@ class Agent(DecisionAgent):
                     return controls
 
         # Determine game state (different from draw state)
-        self.state = self.next_state(my_car, ball, packet)
-        state.get_output(my_car, my_car.physics, ball.physics, team, packet, self)
+        self.state = self.next_state(parsed_packet, packet)
+        return self.state.get_output(parsed_packet, packet, self)

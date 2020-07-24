@@ -3,12 +3,13 @@ import pymongo
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
-from rlbot.utils.structures.game_data_struct import GameTickPacket
+import rlbot.utils.structures.game_data_struct as rl
+from util.packet import ParsedPacket
+
 from rlbot.utils.logging_utils import log, log_warn
 
 from util.ball_prediction_analysis import find_slice_at_time
 from util.boost_pad_tracker import BoostPadTracker
-from util.drive import steer_toward_target
 from util.sequence import Sequence, ControlStep
 from util.vector import Vector
 from util.orientation import Orientation, relative_location
@@ -41,13 +42,14 @@ class DecisionAgent(DrawingAgent):
     WRITE_STATE: bool = True
     WRITE_FLIP_PHYSICS_TO_DB: bool = True   # Write flip physics info to database
 
-    rotate_back: State = RotateBack()
-    kickoff: State = Kickoff()
-    aerial_clear: State = AerialClear()
-    shoot: State = Shoot()
-    get_down_wall = GetDownWall()
-    ground_save = GroundSave()
-    recover = Recover()
+    # States
+    ROTATE_BACK: State = RotateBack()
+    KICKOFF: State = Kickoff()
+    AERIAL_CLEAR: State = AerialClear()
+    SHOOT: State = Shoot()
+    GET_DOWN_WALL = GetDownWall()
+    GROUND_SAVE = GroundSave()
+    RECOVER = Recover()
 
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
@@ -87,22 +89,22 @@ class DecisionAgent(DrawingAgent):
         return True
       
 
-    def next_state(self, my_car, my_physics, ball_physics, packet: GameTickPacket) -> State:
-        return self.shoot
+    def next_state(self, parsed_packet: ParsedPacket, packet: rl.GameTickPacket) -> State:
+        return self.SHOOT
         # Cast everything if necessary
-        car_location = my_physics.location
-        ball_location = ball_physics.location
+        car_location = parsed_packet.my_car.physics.location
+        ball_location = parsed_packet.ball.physics.location
 
         # Check if we are on the wrong side of the ball
-        signed_dist = self.signed_dist_to_ball(car_location, ball_location, my_car.team)
+        signed_dist = self.signed_dist_to_ball(car_location, ball_location, parsed_packet.my_car.team)
         if (signed_dist < 0):
-            return State.RECOVER
+            return self.RECOVER
 
-        return State.SHOOT  # For now all behavior is described in SHOOT, so
+        return self.SHOOT # For now all behavior is described in SHOOT, so
         # always return that as the state
 
 
-    def display_on_car(self, my_physics, ball_physics, packet):
+    def display_on_car(self, parsed_packet, packet):
         """
         A function that should return what should be printed on the car.
         """

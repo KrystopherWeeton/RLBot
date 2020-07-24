@@ -2,6 +2,7 @@ import math
 from typing import Union
 
 from rlbot.utils.structures.game_data_struct import Vector3
+from rlbot.utils.structures.struct import Struct
 from rlbot.utils.logging_utils import log
 
 class Vector:
@@ -105,26 +106,3 @@ def get_items(obj) -> list:
         return obj.items()
     except (AttributeError, TypeError):
         return None
-
-
-def convert_vecs(obj) -> dict:
-    items = get_items(obj)
-    if items is not None:
-        temp = {}
-        for k, v in obj.items():
-            temp[k] = convert_vecs(v)
-        return temp
-    elif isinstance(obj, Vector3):
-        log("vectorizing")
-        return vectorize(v)
-    elif isinstance(obj, list):
-        return [ convert_vecs(x) for x in v]
-    else:
-        return obj
-
-
-class Packet:
-
-
-def convert_packet(packet: GameTickPacket) -> Packet:
-    packet.

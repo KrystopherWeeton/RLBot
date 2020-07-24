@@ -8,7 +8,8 @@ from math import sin
 
 from rlbot.utils.logging_utils import log
 
-from rlbot.utils.structures.game_data_struct import Physics
+from util.packet import Physics
+import rlbot.utils.structures.game_data_struct as rl
 
 class LegendEntry:
     text: str = None
