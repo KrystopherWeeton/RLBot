@@ -48,6 +48,9 @@ class DrawingAgent(BaseAgent):
         color = color or self.renderer.cyan()
         self.renderer.draw_string_3d(location, scale, scale, str(message), color)
 
+    def write_string_2d(self, x, y, message):
+        self.renderer.draw_string_2d(x, y, 1, 1, message, self.renderer.white())
+
 
     def draw_line_with_rect(self, start, end, size, color=None):
         """

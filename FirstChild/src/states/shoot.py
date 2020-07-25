@@ -9,6 +9,10 @@ from util.ball_prediction_analysis import find_slice_at_time
 from util.drive import steer_toward_target
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
+from util.util import get_angle
+
+import math
+
 from drawing_agent import DrawingAgent
 
 class Shoot(State):
@@ -17,6 +21,8 @@ class Shoot(State):
     DELTA_T_THRESH: float = 0.1
     CONTACT_Z_THRESH: float = 120.0
     contactPoint: Vector = None
+    DIST_THRESHOLD: float = 400
+    POWERSLIDE_THRESHOLD: float = 0.5
     
 
     def get_time(self, time, slice: Slice):
@@ -25,10 +31,7 @@ class Shoot(State):
     def score(self, parsed_packet: ParsedPacket, packet: GameTickPacket, agent: BaseAgent) -> float:
         return None
 
-    """
-    Scan for potential contact points and choose the closest feasible one
-    """
-    def chooseContactPoint(self, slices: [Slice], carPhysics, agent: DrawingAgent):
+    def get_candidates(self, slices: [Slice], car_physics: Physics, agent: DrawingAgent) -> [Slice]:
         candidates = []
         for i, elem in enumerate(slices):
             pos = elem.physics.location
@@ -37,26 +40,56 @@ class Shoot(State):
             #elif(pos.z <= slices[i - 1].physics.location.z and pos.z <= slices[i + 1].physics.location.z):
             elif(pos.z < self.CONTACT_Z_THRESH):
                 candidates.append(elem)
-        #agent.draw_rects(candidates, agent.renderer.red())
+        return candidates
+
+    def score_candidate(self, init_time: float, candidate: Slice, car_physics: Physics, agent: DrawingAgent) -> float:
+        """
+        Scores a candidate.
+        < 0 => not considered a valid candidate
+        >= 0 => valid candidate. Higher the number the better.
+        """
+        # Calculate the time the ball and car will take to get
+        # to get to the candidate point. Assume car is pointed
+        # in the correct direction.
+        ball_time = self.get_time(init_time, candidate)
+        dist = car_physics.location.dist(Vector(candidate.physics.location))
+        car_time = dist / car_physics.velocity.length()
+        delta = car_time - ball_time # < 0 means ball will get there after player
+
+        # Check if we are able to turn to hit the ball?
+        angle = get_angle(car_physics.rotation, car_physics.location, Vector(candidate.physics.location))
+
+        cost = angle / 10 if dist < self.DIST_THRESHOLD else 0
+
+        # If the car will get there too early, or the delta is too large, bail
+        if (delta < 0 or delta > self.DELTA_T_THRESH):
+            return - abs(delta)
+
+        # Adjust the score to account for turning radius
+        return (self.DELTA_T_THRESH - delta) - cost
+
+        # Calculate the time the car will take to get there
+
+    """
+    Scan for potential contact points and choose the closest feasible one
+    """
+    def chooseContactPoint(self, slices: [Slice], carPhysics, agent: DrawingAgent):
+        candidates: [Slice] = self.get_candidates(slices, carPhysics, agent)
 
         # calculate estimated time to reach each candidate
         init_time = slices[0].game_seconds
         optimalPoint = None
-        optimalDelta = 0
+        optimalScore = -1
         for i, cand in enumerate(candidates):
-            ballTime = self.get_time(init_time, cand)
-            dist = carPhysics.location.dist(Vector(cand.physics.location))
-
-            carTime = dist / carPhysics.velocity.length()
-            deltaTime = carTime - ballTime
-            if(deltaTime < self.DELTA_T_THRESH and deltaTime > optimalDelta):
-                optimalDelta = deltaTime
+            score = self.score_candidate(init_time, cand, carPhysics, agent)
+            if (score > optimalScore):
                 optimalPoint = cand.physics.location
+                optimalScore = score
             
         if(optimalPoint != None):
             self.contactPoint = Vector(optimalPoint)
             agent.draw_rects([optimalPoint], agent.renderer.blue())
-            agent.write_string(optimalPoint, f"{optimalDelta:.2f}", 1, agent.renderer.lime())
+            agent.write_string(optimalPoint, f"{self.DELTA_T_THRESH - optimalScore:.2f}", 1, agent.renderer.lime())
         else:
             self.contactPoint = None
             
@@ -70,6 +103,8 @@ class Shoot(State):
         ball_velocity = parsed_packet.ball.physics.velocity
         ball_prediction = agent.get_ball_prediction_struct()
         slices = list(map(lambda x : Vector(x.physics.location), ball_prediction.slices))
+
+        agent.draw_circle(parsed_packet.my_car.physics.location, 400, agent.renderer.white(), False, 0)
 
         
 
@@ -89,9 +124,7 @@ class Shoot(State):
             agent.prev_seq_done = True
             agent.write_flip_physics(agent.current_flip_physics)
 
-        #self.draw_sphere(self.goal_center(my_car.team), 20, self.renderer.red())
-
-        if car_location.dist(flip_point) < 500 and self.contactPoint != None:
+        if car_location.dist(flip_point) < 300 and self.contactPoint != None:
             if agent.WRITE_FLIP_PHYSICS_TO_DB == True:
                 # record physics info at beginning of flip
                 agent.current_flip_physics = {}
@@ -126,12 +159,19 @@ class Shoot(State):
             return agent.begin_front_flip(packet)
 
         # Draw target to show where the bot is attempting to go
-        agent.draw_line_with_rect(car_location, target_location, 8, agent.renderer.cyan())
+        if (self.contactPoint == None):
+            agent.draw_line_with_rect(car_location, target_location, 8, agent.renderer.cyan())
+
+        angle = get_angle(parsed_packet.my_car.physics.rotation, parsed_packet.my_car.physics.location, parsed_packet.ball.physics.location)
+        agent.write_string_2d(1000, 1000, f"{angle}")
 
         # Set the final controls based off of above decision making
         controls = SimpleControllerState()
         controls.steer = steer_toward_target(my_car, target_location)
         controls.throttle = 1.0
+
+        if (angle < self.POWERSLIDE_THRESHOLD):
+            controls.handbrake = True
 
         # You can set more controls if you want, like controls.boost.
         return controls
