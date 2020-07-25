@@ -1,8 +1,8 @@
-from rlbot.utils.structures.game_data_struct import Physics, GameTickPacket, PlayerInfo
+import rlbot.utils.structures.game_data_struct as rl
 from rlbot.utils.rendering.rendering_manager import RenderingManager
 from rlbot.agents.base_agent import SimpleControllerState, BaseAgent
 from states.state import State
-from util.packet import ParsedPacket
+from util.packet import ParsedPacket, Physics
 from util.vector import Vector
 from util.orientation import Orientation
 from util.ball_prediction_analysis import find_slice_at_time
@@ -16,3 +16,6 @@ def get_angle(car_rotation, car_location, ball_location) -> float:
     car_to_ball = Vector(ball_location) - car_location
     angle = orientation.forward.ang_to(car_to_ball)
     return angle
+
+def get_post_collision_velocity(ball_physics: Physics, car_physics: Physics) -> Vector:
+    return ball_physics.velocity + car_physics.velocity
