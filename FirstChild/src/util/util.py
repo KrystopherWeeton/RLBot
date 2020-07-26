@@ -2,7 +2,7 @@ import rlbot.utils.structures.game_data_struct as rl
 from rlbot.utils.rendering.rendering_manager import RenderingManager
 from rlbot.agents.base_agent import SimpleControllerState, BaseAgent
 from states.state import State
-from util.packet import ParsedPacket
+from util.packet import ParsedPacket, Physics
 from util.vector import Vector
 from util.orientation import Orientation
 from util.ball_prediction_analysis import find_slice_at_time
@@ -114,3 +114,5 @@ def get_collission(
         forward = __is_colliding(car_location, car_hitbox, car_orientation, ball_location, ball_hitbox)
         search_space = __step(forward, search_space)
         dist = __dist(search_space)
+def get_post_collision_velocity(ball_physics: Physics, car_physics: Physics) -> Vector:
+    return ball_physics.velocity + car_physics.velocity
