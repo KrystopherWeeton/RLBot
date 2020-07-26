@@ -20,10 +20,12 @@ from rlbot.utils.logging_utils import log, log_warn
 import rlbot.utils.structures.game_data_struct as rl
 from util.packet import ParsedPacket, Physics, parse_field_info
 
-from util.vector import Vector
 from util.packet import parse_packet, ParsedPacket, FieldInfoPacket
 
+from util.util import is_colliding
+
 from states.state import State
+from util.orientation import Orientation
 
 class Agent(DecisionAgent):
 
@@ -78,6 +80,7 @@ class Agent(DecisionAgent):
                 continue
             return loc
 
+    colissions: int = 0
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         # Parse the packet to gather relevant information
@@ -101,6 +104,19 @@ class Agent(DecisionAgent):
             ]
             self.draw_physics_info(ball_physics)
         
+
+        # self.draw_car_hitbox(parsed_packet.my_car.physics.location, parsed_packet.my_car.hitbox, Orientation(parsed_packet.my_car.physics.rotation))
+        # Draw if the car is currently colliding with the ball
+        if __is_colliding(
+            parsed_packet.my_car.physics.location,
+            parsed_packet.my_car.hitbox,
+            Orientation(parsed_packet.my_car.physics.rotation),
+            parsed_packet.ball.physics.location,
+            parsed_packet.ball.hitbox
+        ):
+            self.colissions += 1
+
+        # legend_entries.append(LegendEntry(f"Colissions: {self.colissions}", self.renderer.orange()))
         self.draw_legend(legend_entries)
 
         # Draw the state / debug information

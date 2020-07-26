@@ -48,10 +48,12 @@ class Touch:
 class BallInfo:
     physics: Physics = None
     latest_touch: Touch = None
+    hitbox: rl.SphereShape = None
 
     def __init__(self, other: rl.BallInfo):
         self.physics = Physics(other.physics)
         self.latest_touch = Touch(other.latest_touch)
+        self.hitbox = other.collision_shape.sphere
 
 
 class ParsedPacket:

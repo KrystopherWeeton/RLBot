@@ -1,8 +1,9 @@
 from rlbot.utils.rendering.rendering_manager import RenderingManager
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
-from rlbot.utils.structures.game_data_struct import GameTickPacket
+from rlbot.utils.structures.game_data_struct import GameTickPacket, BoxShape
 from util.vector import Vector, polar_to_cartesian
+from util.orientation import Orientation
 
 from math import sin
 
@@ -10,6 +11,7 @@ from rlbot.utils.logging_utils import log
 
 from util.packet import Physics
 import rlbot.utils.structures.game_data_struct as rl
+from util.util import get_corners
 
 class LegendEntry:
     text: str = None
@@ -37,6 +39,11 @@ class DrawingAgent(BaseAgent):
         for entry in entries:
             self.renderer.draw_string_2d(10, offset, 1, 1, entry.text, entry.color)
             offset += 30
+
+    
+    def draw_car_hitbox(self, car_loc: Vector, car_hitbox: BoxShape, ori: Orientation):
+        front, back = get_corners(car_loc, car_hitbox, ori)
+        self.draw_rects(front + back, self.renderer.orange())
 
     def draw_polyline(self, vecs: [Vector], color):
         self.renderer.draw_polyline_3d(vecs, color)
